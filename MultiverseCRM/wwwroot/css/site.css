@@ -262,7 +262,7 @@ th.sticky-col-right { z-index: 30 !important; background: #f8fafc; }
 }
 .premium-tabs .nav-link:hover { color: var(--text-main); background: transparent; }
 .premium-tabs .nav-link.active { color: var(--primary) !important; border-bottom: 2px solid var(--primary); background: transparent !important; }
-.premium-tabs .badge { font-weight: 600; }
+.premium-tabs .badge { font-weight: 600; height: 20px; }
 
 /* Toasts */
 .toast-stack {

@@ -3,7 +3,6 @@
     ViewData["Title"] = "Leads";
     var app = AppOpt.Value;
 
-    // Everything below comes from the LookupOptions table
     var statusOpts = await Lookups.GetAsync("Status");
     var statusColor = statusOpts.ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
     var priorityColor = (await Lookups.GetAsync("Priority")).ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
@@ -37,14 +36,74 @@
     }
 }
 
+<style>
+    /* ===== Lead table styling ===== */
+    .premium-table thead th {
+        color: #111827 !important;          /* black headers */
+        font-weight: 600;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    /* center all body cells by default */
+    .premium-table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    /* keep sticky columns readable (name + actions) */
+    .premium-table .sticky-col-left:not(:first-child),
+    .premium-table .sticky-col-right {
+        text-align: left;
+    }
+    .premium-table .sticky-col-right { text-align: center; }
+
+    /* the Name & Contact cell should stay left-aligned */
+    .premium-table td.sticky-col-left .d-flex {
+        text-align: left;
+    }
+
+    /* header checkbox alignment */
+    .premium-table thead th .form-check-input {
+        float: none;
+        margin: 0;
+    }
+
+    /* Bulk actions bar */
+    .bulk-bar {
+        display: none;
+        align-items: center;
+        gap: .75rem;
+        padding: .6rem 1rem;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    .bulk-bar.show { display: flex; }
+    .bulk-bar .bulk-count { color: #b91c1c; font-weight: 600; font-size: .9rem; }
+</style>
+
 <!-- Toolbar -->
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div class="d-flex gap-2 flex-wrap">
         <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addLeadModal">
             <i class="bi bi-plus-lg me-1"></i> Add Lead
         </button>
-        <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-download me-1"></i> Export</button>
-        <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-upload me-1"></i> Import</button>
+        <!-- Export -->
+        <a class="btn btn-outline-secondary btn-sm px-3"
+        asp-action="Export"
+        asp-route-status="@Model.ActiveStatus"
+        asp-route-search="@Model.SearchTerm"
+        asp-route-sortBy="@Model.SortBy"
+        asp-route-sortOrder="@Model.SortOrder">
+            <i class="bi bi-download me-1"></i> Export
+        </a>
+
+        <!-- Import -->
+        <button class="btn btn-outline-secondary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#importLeadModal">
+            <i class="bi bi-upload me-1"></i> Import
+        </button>
         <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-clock-history me-1"></i> History</button>
     </div>
 
@@ -61,7 +120,23 @@
     </form>
 </div>
 
-<!-- Autocomplete lists (shared by Add + Edit modals) -->
+<!-- Bulk delete bar -->
+<div class="bulk-bar" id="bulkBar">
+    <i class="bi bi-check2-square text-danger"></i>
+    <span class="bulk-count" id="bulkCount">0 selected</span>
+    <button type="button" class="btn btn-danger btn-sm ms-auto px-3" id="bulkDeleteBtn">
+        <i class="bi bi-trash me-1"></i> Delete selected
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="bulkClearBtn">Clear</button>
+</div>
+
+<!-- Hidden bulk-delete form -->
+<form id="bulkDeleteForm" asp-action="DeleteMany" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="ids" id="bulkDeleteIds" />
+</form>
+
+<!-- Autocomplete lists -->
 <datalist id="dl-source">@foreach (var o in await Lookups.GetAsync("Source")) { <option value="@o.Value" /> }</datalist>
 <datalist id="dl-primarysource">@foreach (var o in await Lookups.GetAsync("PrimarySource")) { <option value="@o.Value" /> }</datalist>
 <datalist id="dl-city">@foreach (var c in await Lookups.DistinctAsync("City")) { <option value="@c" /> }</datalist>
@@ -86,7 +161,7 @@
             <thead>
                 <tr>
                     <th class="sticky-col-left" style="width: 40px; padding-left: 20px;">
-                        <input class="form-check-input" type="checkbox" />
+                        <input class="form-check-input" type="checkbox" id="selectAllLeads" />
                     </th>
                     <th class="sticky-col-left" style="min-width: 220px;">Name & Contact</th>
 
@@ -142,7 +217,7 @@
                 {
                     <tr>
                         <td class="sticky-col-left" style="padding-left: 20px;">
-                            <input class="form-check-input" type="checkbox" />
+                            <input class="form-check-input lead-checkbox" type="checkbox" value="@lead.Id" />
                         </td>
                         <td class="sticky-col-left">
                             <div class="d-flex align-items-center gap-2">
@@ -172,7 +247,6 @@
                         <td>@(lead.RemarkAssignedTo ?? "-")</td>
                         <td class="text-muted">@(lead.RemarkDate?.ToString("dd MMM yy, hh:mm tt") ?? "-")</td>
 
-                        <!-- TAGS: inline Tom Select, saved via /Leads/UpdateTags -->
                         <td style="min-width:200px;">
                             <select class="tag-selector" data-lead-id="@lead.Id" multiple placeholder="Add tags...">
                                 @if (!string.IsNullOrWhiteSpace(lead.Tags))
@@ -230,6 +304,72 @@
     </div>
 </div>
 
+<!-- Import Modal -->
+<div class="modal fade" id="importLeadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+            <div class="modal-header border-bottom bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="text-primary rounded p-2" style="background:#eef2ff;">
+                        <i class="bi bi-upload"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Import Leads</h6>
+                        <small class="text-muted" style="font-size:.75rem;">Upload .xlsx or .csv (max 20 MB).</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="importForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <label class="form-label small fw-medium">Choose file</label>
+                    <input type="file" id="importFile" name="file" accept=".xlsx,.csv" class="form-control" required />
+                    <div class="form-text">Required columns: <code>FullName</code>, <code>Phone</code>. Duplicates by phone are skipped.</div>
+                    <div id="importError" class="alert alert-danger d-none mt-3 mb-0 small"></div>
+                </div>
+                <div class="modal-footer border-top bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4" id="importBtn">
+                        <span class="label">Upload &amp; Import</span>
+                        <span class="spinner-border spinner-border-sm d-none"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal fade" id="importResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+            <div class="modal-header border-bottom bg-light">
+                <h6 class="mb-0 fw-bold">Import Result</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="importSummary" class="mb-3"></div>
+                <div class="table-responsive" style="max-height:400px;">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Row</th><th>Name</th><th>Phone</th><th>Status</th><th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importResultBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                        onclick="location.reload()">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Partial modals -->
 <partial name="_AddLeadModal" />
 <partial name="_EditLeadModal" />
@@ -247,7 +387,7 @@
             options: existingTags.map(t => ({ value: t, text: t }))
         });
 
-        // Inline tag editors in the table
+        // Inline tag editors
         document.querySelectorAll('.tag-selector').forEach(el => {
             new TomSelect(el, {
                 ...tagCfg(),
@@ -261,11 +401,51 @@
             });
         });
 
-        // Tag inputs inside Add / Edit modals
         new TomSelect('#add-Tags', tagCfg());
         const editTags = new TomSelect('#edit-Tags', tagCfg());
 
-        // Edit + Delete buttons (event delegation)
+        // ===== Select all / bulk delete =====
+        const selectAll = document.getElementById('selectAllLeads');
+        const rowChecks = () => Array.from(document.querySelectorAll('.lead-checkbox'));
+        const bulkBar   = document.getElementById('bulkBar');
+        const bulkCount = document.getElementById('bulkCount');
+
+        function refreshBulkUI() {
+            const checked = rowChecks().filter(c => c.checked);
+            const n = checked.length;
+            bulkBar.classList.toggle('show', n > 0);
+            bulkCount.textContent = n + ' selected';
+            // sync header checkbox
+            const all = rowChecks();
+            selectAll.checked = all.length > 0 && n === all.length;
+            selectAll.indeterminate = n > 0 && n < all.length;
+        }
+
+        selectAll?.addEventListener('change', () => {
+            rowChecks().forEach(c => c.checked = selectAll.checked);
+            refreshBulkUI();
+        });
+
+        document.addEventListener('change', e => {
+            if (e.target.classList.contains('lead-checkbox')) refreshBulkUI();
+        });
+
+        document.getElementById('bulkClearBtn')?.addEventListener('click', () => {
+            rowChecks().forEach(c => c.checked = false);
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+            refreshBulkUI();
+        });
+
+        document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => {
+            const ids = rowChecks().filter(c => c.checked).map(c => c.value);
+            if (!ids.length) return;
+            if (!confirm(`Delete ${ids.length} lead(s)? This cannot be undone.`)) return;
+            document.getElementById('bulkDeleteIds').value = ids.join(',');
+            document.getElementById('bulkDeleteForm').submit();
+        });
+
+        // ===== Edit + Delete single =====
         document.addEventListener('click', e => {
             const del = e.target.closest('.btn-delete-lead');
             if (del) {
@@ -278,7 +458,6 @@
             if (!btn) return;
             const lead = JSON.parse(btn.dataset.lead);
 
-            // Fill every #edit-<Property> from the lead JSON, so no field can be forgotten
             document.querySelectorAll('#editLeadModal [id^="edit-"]').forEach(el => {
                 const key = el.id.slice(5).toLowerCase();
                 const prop = Object.keys(lead).find(k => k.toLowerCase() === key);
@@ -295,12 +474,79 @@
                 if (el.type === 'date') v = String(v).slice(0, 10);
                 if (el.type === 'datetime-local') v = String(v).slice(0, 16);
 
-                // keep legacy values that are no longer in the lookup table (prevents data loss on save)
                 if (el.tagName === 'SELECT' && v && ![...el.options].some(o => o.value === String(v)))
                     el.add(new Option(v, v));
 
                 el.value = v;
             });
         });
+
+        // ===== Import =====
+const importForm = document.getElementById('importForm');
+const importBtn  = document.getElementById('importBtn');
+const importErr  = document.getElementById('importError');
+
+function setBusy(on) {
+    importBtn.disabled = on;
+    importBtn.querySelector('.label').classList.toggle('d-none', on);
+    importBtn.querySelector('.spinner-border').classList.toggle('d-none', !on);
+}
+
+importForm?.addEventListener('submit', async e => {
+    e.preventDefault();
+    importErr.classList.add('d-none');
+
+    const file = document.getElementById('importFile').files[0];
+    if (!file) { importErr.textContent = 'Please choose a file.'; importErr.classList.remove('d-none'); return; }
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('__RequestVerificationToken', csrf);
+
+    setBusy(true);
+    try {
+        const res  = await fetch('@Url.Action("Import", "Leads")', { method: 'POST', body: fd });
+        const text = await res.text();
+        if (!res.ok) {
+            importErr.textContent = text || 'Import failed.';
+            importErr.classList.remove('d-none');
+            setBusy(false);
+            return;
+        }
+        const data = JSON.parse(text);
+
+        // Summary
+        document.getElementById('importSummary').innerHTML = `
+            <div class="d-flex gap-3 flex-wrap">
+                <span class="badge text-bg-secondary">Total: ${data.totalRows}</span>
+                <span class="badge text-bg-success">Inserted: ${data.insertedCount}</span>
+                <span class="badge text-bg-warning">Skipped: ${data.skippedCount}</span>
+                <span class="badge text-bg-danger">Errors: ${data.errorCount}</span>
+            </div>`;
+
+        // Rows
+        const tbody = document.getElementById('importResultBody');
+        tbody.innerHTML = data.rows.map(r => {
+            const cls = r.status === 'Inserted' ? 'success'
+                      : r.status.startsWith('Skipped') ? 'warning' : 'danger';
+            return `<tr>
+                <td>${r.rowNumber}</td>
+                <td>${r.fullName ?? ''}</td>
+                <td>${r.phone ?? ''}</td>
+                <td><span class="badge text-bg-${cls}">${r.status}</span></td>
+                <td class="small text-muted">${r.message ?? ''}</td>
+            </tr>`;
+        }).join('');
+
+        // Close import, open result
+        bootstrap.Modal.getInstance(document.getElementById('importLeadModal')).hide();
+        new bootstrap.Modal(document.getElementById('importResultModal')).show();
+    } catch (ex) {
+        importErr.textContent = 'Upload failed: ' + ex.message;
+        importErr.classList.remove('d-none');
+    } finally {
+        setBusy(false);
+    }
+});
     </script>
 }

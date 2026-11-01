@@ -228,4 +228,13 @@ E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\refint\MultiverseCRM.dll
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.pdb
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.genruntimeconfig.cache
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\ref\MultiverseCRM.dll
-E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-dctsr80cz7-dctsr80cz7.gz
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.sourcelink.json
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-306v4dux1n-306v4dux1n.gz
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ClosedXML.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ClosedXML.Parser.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\DocumentFormat.OpenXml.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\DocumentFormat.OpenXml.Framework.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ExcelNumberFormat.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\RBush.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\SixLabors.Fonts.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.IO.Packaging.dll

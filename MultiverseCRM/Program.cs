@@ -20,8 +20,9 @@ builder.Services.AddAuthentication("MyCookieAuth").AddCookie("MyCookieAuth", opt
 });
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<MultiverseCRM.Services.ILookupService, MultiverseCRM.Services.LookupService>();
+builder.Services.AddScoped<MultiverseCRM.Services.ILeadImportExportService, MultiverseCRM.Services.LeadImportExportService>();
 builder.Services.Configure<MultiverseCRM.Services.AppOptions>(builder.Configuration.GetSection("App"));
-
+    
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
