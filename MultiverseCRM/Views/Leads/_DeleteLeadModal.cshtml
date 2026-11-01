@@ -1,0 +1,39 @@
+<div class="modal fade" id="deleteLeadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+            <div class="modal-header border-bottom bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="text-danger rounded p-2" style="background:#fee2e2;">
+                        <i class="bi bi-trash"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Delete Lead</h6>
+                        <small class="text-muted" style="font-size:0.75rem;">This action cannot be undone.</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="delete-Id" name="id" />
+
+                <div class="modal-body p-4">
+                    <p class="mb-0">
+                        Are you sure you want to delete
+                        <strong id="delete-lead-name">this lead</strong>?
+                    </p>
+                </div>
+
+                <div class="modal-footer border-top bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash me-1"></i> Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

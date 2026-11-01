@@ -1,0 +1,184 @@
+<div class="modal fade" id="editLeadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
+            <div class="modal-header border-bottom bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="text-warning rounded p-2" style="background:#fff7e6;">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Edit Lead</h6>
+                        <small class="text-muted" style="font-size:0.75rem;">Update lead details and save changes.</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form asp-action="Edit" method="post" style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="edit-Id" name="Id" />
+
+                <div class="modal-body p-4" style="overflow-y:auto;">
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-info-circle me-1"></i> Basic Information</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Full Name <span class="text-danger">*</span></label>
+                            <input id="edit-FullName" name="FullName" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Phone <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">@AppOpt.Value.PhonePrefix</span>
+                                <input id="edit-Phone" name="Phone" class="form-control" inputmode="tel" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Priority</label>
+                            <lookup-select id="edit-Priority" category="Priority" name="Priority" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Assign Staff</label>
+                            <lookup-select id="edit-Staff" staff="true" name="Staff" placeholder="Select staff..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Source</label>
+                            <input id="edit-Source" name="Source" class="form-control" list="dl-source" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Primary Source</label>
+                            <input id="edit-PrimarySource" name="PrimarySource" class="form-control" list="dl-primarysource" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Alternate Mobile</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">@AppOpt.Value.PhonePrefix</span>
+                                <input id="edit-AltPhone" name="AltPhone" class="form-control" inputmode="tel" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Email</label>
+                            <input id="edit-Email" type="email" name="Email" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">City</label>
+                            <input id="edit-City" name="City" class="form-control" list="dl-city" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Location</label>
+                            <input id="edit-Location" name="Location" class="form-control" />
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-cash me-1"></i> Budget & Area</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-medium">Min Price</label>
+                            <input id="edit-MinPrice" type="number" name="MinPrice" class="form-control" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-medium">Max Price</label>
+                            <input id="edit-MaxPrice" type="number" name="MaxPrice" class="form-control" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-medium">Min Area</label>
+                            <input id="edit-MinArea" type="number" step="0.01" name="MinArea" class="form-control" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-medium">Max Area</label>
+                            <input id="edit-MaxArea" type="number" step="0.01" name="MaxArea" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Area (SQFT)</label>
+                            <input id="edit-AreaSqft" type="number" name="AreaSqft" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Area Unit</label>
+                            <lookup-select id="edit-AreaUnit" category="AreaUnit" name="AreaUnit" />
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-chat-dots me-1"></i> Remarks & Tags</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label small fw-medium">Latest Remark</label>
+                            <input id="edit-LatestRemark" name="LatestRemark" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Remark Assigned To</label>
+                            <lookup-select id="edit-RemarkAssignedTo" staff="true" name="RemarkAssignedTo" placeholder="Select staff..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Remark Date</label>
+                            <input id="edit-RemarkDate" type="datetime-local" name="RemarkDate" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-medium">Additional Requirements</label>
+                            <textarea id="edit-AdditionalRequirements" name="AdditionalRequirements" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-medium">Tags</label>
+                            <input id="edit-Tags" name="Tags" class="form-control" placeholder="Type and press Enter" />
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-house-door me-1"></i> Property Preference</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Project</label>
+                            <input id="edit-Project" name="Project" class="form-control" list="dl-project" autocomplete="off" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">BHK</label>
+                            <lookup-select id="edit-BHK" category="BHK" name="BHK" placeholder="Select BHK..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Furnished</label>
+                            <lookup-select id="edit-Furnished" category="Furnished" name="Furnished" placeholder="Select..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Looking For</label>
+                            <lookup-select id="edit-LookingFor" category="LookingFor" name="LookingFor" placeholder="Select..." />
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-badge me-1"></i> Customer Details</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Customer Type</label>
+                            <lookup-select id="edit-CustomerType" category="CustomerType" name="CustomerType" placeholder="Select..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Customer Category</label>
+                            <lookup-select id="edit-CustomerCategory" category="CustomerCategory" name="CustomerCategory" placeholder="Select..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Birth Date</label>
+                            <input id="edit-BirthDate" type="date" name="BirthDate" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Channel Partner</label>
+                            <input id="edit-ChannelPartner" name="ChannelPartner" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Status</label>
+                            <lookup-select id="edit-Status" category="Status" name="Status" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium">Price (@AppOpt.Value.CurrencySymbol)</label>
+                            <input id="edit-Price" type="number" name="Price" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-warning px-4">
+                        <i class="bi bi-check-lg me-1"></i> Update Lead
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

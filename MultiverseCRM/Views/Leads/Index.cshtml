@@ -1,0 +1,306 @@
+@model MultiverseCRM.ViewModels.LeadListViewModel
+@{
+    ViewData["Title"] = "Leads";
+    var app = AppOpt.Value;
+
+    // Everything below comes from the LookupOptions table
+    var statusOpts = await Lookups.GetAsync("Status");
+    var statusColor = statusOpts.ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
+    var priorityColor = (await Lookups.GetAsync("Priority")).ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
+
+    var tabs = new List<(string Name, int Count)> { ("All", Model.TotalCount) };
+    tabs.AddRange(statusOpts.Select(o => (o.Value, Model.StatusCounts.GetValueOrDefault(o.Value))));
+
+    var totalPages = Math.Max(1, (int)Math.Ceiling(Model.FilteredCount / (double)Model.PageSize));
+    var firstRow = Model.FilteredCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var lastRow = Math.Min(Model.Page * Model.PageSize, Model.FilteredCount);
+
+    Dictionary<string, string> Rd(int p) => new()
+    {
+        ["status"] = Model.ActiveStatus,
+        ["search"] = Model.SearchTerm ?? "",
+        ["sortBy"] = Model.SortBy,
+        ["sortOrder"] = Model.SortOrder,
+        ["pageSize"] = Model.PageSize.ToString(),
+        ["page"] = p.ToString()
+    };
+
+    string LeadJson(MultiverseCRM.Models.Lead l) => System.Text.Json.JsonSerializer.Serialize(l);
+
+    string SortIcon(string col) {
+        if (Model.SortBy != col) return "bi-arrow-down-up";
+        return Model.SortOrder == "asc" ? "bi-arrow-up" : "bi-arrow-down";
+    }
+    string NextOrder(string col) {
+        if (Model.SortBy != col) return "asc";
+        return Model.SortOrder == "asc" ? "desc" : "asc";
+    }
+}
+
+<!-- Toolbar -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addLeadModal">
+            <i class="bi bi-plus-lg me-1"></i> Add Lead
+        </button>
+        <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-download me-1"></i> Export</button>
+        <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-upload me-1"></i> Import</button>
+        <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-clock-history me-1"></i> History</button>
+    </div>
+
+    <form method="get" class="d-flex gap-2" style="max-width: 350px; width: 100%;">
+        <input type="hidden" name="status" value="@Model.ActiveStatus" />
+        <input type="hidden" name="sortBy" value="@Model.SortBy" />
+        <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
+        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="search" value="@Model.SearchTerm" class="form-control border-start-0" placeholder="Search leads..." />
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm">Filter</button>
+    </form>
+</div>
+
+<!-- Autocomplete lists (shared by Add + Edit modals) -->
+<datalist id="dl-source">@foreach (var o in await Lookups.GetAsync("Source")) { <option value="@o.Value" /> }</datalist>
+<datalist id="dl-primarysource">@foreach (var o in await Lookups.GetAsync("PrimarySource")) { <option value="@o.Value" /> }</datalist>
+<datalist id="dl-city">@foreach (var c in await Lookups.DistinctAsync("City")) { <option value="@c" /> }</datalist>
+<datalist id="dl-project">@foreach (var c in await Lookups.DistinctAsync("Project")) { <option value="@c" /> }</datalist>
+
+<!-- Tabs -->
+<div class="premium-tabs mb-3">
+    @foreach (var s in tabs)
+    {
+        <a class="nav-link @(Model.ActiveStatus == s.Name ? "active" : "")"
+           asp-action="Index" asp-route-status="@s.Name" asp-route-search="@Model.SearchTerm"
+           asp-route-sortBy="@Model.SortBy" asp-route-sortOrder="@Model.SortOrder">
+            @s.Name <span class="badge bg-light text-dark ms-1 border">@s.Count</span>
+        </a>
+    }
+</div>
+
+<!-- Table -->
+<div class="table-container">
+    <div class="table-scroll-area">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th class="sticky-col-left" style="width: 40px; padding-left: 20px;">
+                        <input class="form-check-input" type="checkbox" />
+                    </th>
+                    <th class="sticky-col-left" style="min-width: 220px;">Name & Contact</th>
+
+                    <th>
+                        <a class="sort-header" asp-action="Index"
+                           asp-route-sortBy="CreatedAt" asp-route-sortOrder="@NextOrder("CreatedAt")"
+                           asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
+                            Date/Time <i class="bi @SortIcon("CreatedAt")"></i>
+                        </a>
+                    </th>
+
+                    <th>
+                        <a class="sort-header" asp-action="Index"
+                           asp-route-sortBy="UpdatedAt" asp-route-sortOrder="@NextOrder("UpdatedAt")"
+                           asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
+                            Updated <i class="bi @SortIcon("UpdatedAt")"></i>
+                        </a>
+                    </th>
+
+                    <th>Priority</th>
+                    <th>Email</th>
+                    <th>Source</th>
+                    <th>Primary Source</th>
+                    <th>Staff</th>
+                    <th>Latest Remark</th>
+                    <th>Remark Assigned</th>
+                    <th>
+                        <a class="sort-header" asp-action="Index"
+                           asp-route-sortBy="RemarkDate" asp-route-sortOrder="@NextOrder("RemarkDate")"
+                           asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
+                            Remark Date <i class="bi @SortIcon("RemarkDate")"></i>
+                        </a>
+                    </th>
+                    <th>Tags</th>
+                    <th>Add. Requirements</th>
+                    <th>Project</th>
+                    <th>BHK</th>
+                    <th>Location</th>
+                    <th>Price / Budget</th>
+                    <th>
+                        <a class="sort-header" asp-action="Index"
+                           asp-route-sortBy="AreaSqft" asp-route-sortOrder="@NextOrder("AreaSqft")"
+                           asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
+                            Area (SQFT) <i class="bi @SortIcon("AreaSqft")"></i>
+                        </a>
+                    </th>
+                    <th>Status</th>
+                    <th class="sticky-col-right text-center" style="min-width: 100px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var lead in Model.Leads)
+                {
+                    <tr>
+                        <td class="sticky-col-left" style="padding-left: 20px;">
+                            <input class="form-check-input" type="checkbox" />
+                        </td>
+                        <td class="sticky-col-left">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="lead-avatar">@Format.Initials(lead.FullName)</span>
+                                <div>
+                                    <div class="fw-semibold text-dark">
+                                        @lead.FullName
+                                        @if (lead.Duplicate) { <span class="badge text-bg-warning ms-1">Duplicate</span> }
+                                    </div>
+                                    <div class="lead-contact">
+                                        <a href="tel:@(app.PhonePrefix)@lead.Phone">@app.PhonePrefix @lead.Phone</a>
+                                        <a class="wa" target="_blank" rel="noopener" title="WhatsApp"
+                                           href="https://wa.me/@(app.PhonePrefix.TrimStart('+'))@lead.Phone"><i class="bi bi-whatsapp"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="text-muted" title="@Format.Stamp(lead.CreatedAt, app.TimeZone)">@Format.Ago(lead.CreatedAt)</td>
+                        <td class="text-muted" title="@Format.Stamp(lead.UpdatedAt, app.TimeZone)">@Format.Ago(lead.UpdatedAt)</td>
+                        <td><span class="pill" style="--pill:@priorityColor.GetValueOrDefault(lead.Priority, "#64748b")">@lead.Priority</span></td>
+                        <td>@(lead.Email ?? "-")</td>
+                        <td>@(lead.Source ?? "-")</td>
+                        <td>@(lead.PrimarySource ?? "-")</td>
+                        <td>@(lead.Staff ?? "-")</td>
+                        <td class="text-truncate" style="max-width: 200px;" title="@lead.LatestRemark">@(lead.LatestRemark ?? "-")</td>
+                        <td>@(lead.RemarkAssignedTo ?? "-")</td>
+                        <td class="text-muted">@(lead.RemarkDate?.ToString("dd MMM yy, hh:mm tt") ?? "-")</td>
+
+                        <!-- TAGS: inline Tom Select, saved via /Leads/UpdateTags -->
+                        <td style="min-width:200px;">
+                            <select class="tag-selector" data-lead-id="@lead.Id" multiple placeholder="Add tags...">
+                                @if (!string.IsNullOrWhiteSpace(lead.Tags))
+                                {
+                                    foreach (var tag in lead.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                                    {
+                                        <option value="@tag" selected>@tag</option>
+                                    }
+                                }
+                            </select>
+                        </td>
+
+                        <td class="text-truncate" style="max-width: 180px;" title="@lead.AdditionalRequirements">@(lead.AdditionalRequirements ?? "-")</td>
+                        <td>@(lead.Project ?? "-")</td>
+                        <td>@(lead.BHK ?? "-")</td>
+                        <td>@(lead.Location ?? "-")</td>
+                        <td class="fw-medium">@(lead.Price != null ? Format.Money(lead.Price, app.CurrencySymbol) : Format.Range(lead.MinPrice, lead.MaxPrice, app.CurrencySymbol))</td>
+                        <td>@(lead.AreaSqft?.ToString("N0") ?? "—") sqft</td>
+                        <td><span class="pill" style="--pill:@statusColor.GetValueOrDefault(lead.Status, "#64748b")">@lead.Status</span></td>
+
+                        <td class="sticky-col-right text-center">
+                            <button class="btn btn-sm btn-link text-primary p-1 btn-edit-lead" title="Edit"
+                                    data-lead="@LeadJson(lead)"
+                                    data-bs-toggle="modal" data-bs-target="#editLeadModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-link text-danger p-1 btn-delete-lead" title="Delete"
+                                    data-id="@lead.Id" data-fullname="@lead.FullName"
+                                    data-bs-toggle="modal" data-bs-target="#deleteLeadModal">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Leads.Any())
+                {
+                    <tr><td colspan="20" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>No leads found.
+                    </td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="table-footer">
+        <div class="text-muted small">Showing @(firstRow)–@(lastRow) of @Model.FilteredCount</div>
+        <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-sm btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")"
+               asp-action="Index" asp-all-route-data="Rd(Model.Page - 1)"><i class="bi bi-chevron-left"></i></a>
+            <span class="small text-muted">Page @Model.Page / @totalPages</span>
+            <a class="btn btn-sm btn-outline-secondary @(Model.Page >= totalPages ? "disabled" : "")"
+               asp-action="Index" asp-all-route-data="Rd(Model.Page + 1)"><i class="bi bi-chevron-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<!-- Partial modals -->
+<partial name="_AddLeadModal" />
+<partial name="_EditLeadModal" />
+<partial name="_DeleteLeadModal" />
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        const existingTags = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllTags));
+        const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const tagCfg = () => ({
+            plugins: ['remove_button'], create: true, createOnBlur: true, persist: false, delimiter: ',',
+            options: existingTags.map(t => ({ value: t, text: t }))
+        });
+
+        // Inline tag editors in the table
+        document.querySelectorAll('.tag-selector').forEach(el => {
+            new TomSelect(el, {
+                ...tagCfg(),
+                onChange(v) {
+                    fetch('@Url.Action("UpdateTags", "Leads")', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': csrf },
+                        body: JSON.stringify({ id: +el.dataset.leadId, tags: Array.isArray(v) ? v.join(',') : v })
+                    }).then(r => { if (!r.ok) throw 0; }).catch(() => alert('Could not save tags.'));
+                }
+            });
+        });
+
+        // Tag inputs inside Add / Edit modals
+        new TomSelect('#add-Tags', tagCfg());
+        const editTags = new TomSelect('#edit-Tags', tagCfg());
+
+        // Edit + Delete buttons (event delegation)
+        document.addEventListener('click', e => {
+            const del = e.target.closest('.btn-delete-lead');
+            if (del) {
+                document.getElementById('delete-Id').value = del.dataset.id;
+                document.getElementById('delete-lead-name').textContent = del.dataset.fullname || 'this lead';
+                return;
+            }
+
+            const btn = e.target.closest('.btn-edit-lead');
+            if (!btn) return;
+            const lead = JSON.parse(btn.dataset.lead);
+
+            // Fill every #edit-<Property> from the lead JSON, so no field can be forgotten
+            document.querySelectorAll('#editLeadModal [id^="edit-"]').forEach(el => {
+                const key = el.id.slice(5).toLowerCase();
+                const prop = Object.keys(lead).find(k => k.toLowerCase() === key);
+                let v = prop ? lead[prop] : '';
+                if (v === null || v === undefined) v = '';
+
+                if (el.id === 'edit-Tags') {
+                    const arr = String(v).split(',').map(s => s.trim()).filter(Boolean);
+                    editTags.clear(true);
+                    arr.forEach(t => editTags.addOption({ value: t, text: t }));
+                    editTags.setValue(arr);
+                    return;
+                }
+                if (el.type === 'date') v = String(v).slice(0, 10);
+                if (el.type === 'datetime-local') v = String(v).slice(0, 16);
+
+                // keep legacy values that are no longer in the lookup table (prevents data loss on save)
+                if (el.tagName === 'SELECT' && v && ![...el.options].some(o => o.value === String(v)))
+                    el.add(new Option(v, v));
+
+                el.value = v;
+            });
+        });
+    </script>
+}
