@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<LookupOption> LookupOptions => Set<LookupOption>();
     public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
     public DbSet<ActivityRead> ActivityReads => Set<ActivityRead>();
+    public DbSet<Deal> Deals => Set<Deal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,21 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ActivityRead>()
             .HasIndex(r => r.UserName)
             .IsUnique();
+        modelBuilder.Entity<Deal>()
+        .HasOne(d => d.Lead)
+        .WithMany()
+        .HasForeignKey(d => d.LeadId)
+        .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Deal>()
+            .HasIndex(d => d.Stage);
+
+        modelBuilder.Entity<Deal>()
+            .HasIndex(d => d.Status);
+
+        modelBuilder.Entity<Deal>()
+            .HasIndex(d => d.OwnerUserName);       
+
 
     }
 }

@@ -1884,3 +1884,226 @@ a { text-underline-offset: 3px; }
         transform: none;
     }
 }
+/* =========================================================
+   DEAL MODALS — enterprise polish (scoped to .deal-modal)
+   ========================================================= */
+
+.deal-modal .modal-content.deal-modal {
+    border-radius: 1.1rem;
+    overflow: hidden;
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(180%);
+}
+
+/* ---- Header ---- */
+.deal-modal .deal-modal-header {
+    padding: 0.9rem 1.1rem;
+    background: linear-gradient(180deg, rgba(92,209,255,0.06), transparent);
+    border-bottom: 1px solid var(--glass-line) !important;
+}
+.deal-modal .deal-modal-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+.deal-modal .deal-modal-icon i { line-height: 1; }
+
+/* ---- Body ---- */
+.deal-modal .deal-modal-body {
+    padding: 1.15rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ---- Section blocks ---- */
+.deal-modal .deal-section {
+    border: 1px solid var(--glass-line);
+    border-radius: 0.85rem;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.32);
+}
+[data-theme="dark"] .deal-modal .deal-section {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+.deal-modal .deal-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px dashed var(--glass-line);
+}
+.deal-modal .deal-section-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 0.55rem;
+    display: grid;
+    place-items: center;
+    font-size: 0.85rem;
+    color: var(--aqua-deep);
+    background: rgba(92, 209, 255, 0.18);
+}
+[data-theme="dark"] .deal-modal .deal-section-icon {
+    color: var(--aqua);
+    background: rgba(111, 216, 255, 0.16);
+}
+.deal-modal .deal-section-title {
+    font-weight: 700;
+    font-size: 0.86rem;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+}
+.deal-modal .deal-section-hint {
+    margin-left: auto;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(5, 7, 10, 0.05);
+}
+[data-theme="dark"] .deal-modal .deal-section-hint {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Form controls inside modal — consistent sizing */
+.deal-modal .form-label { margin-bottom: 0.35rem; }
+.deal-modal .form-control,
+.deal-modal .form-select {
+    min-height: 2.55rem;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.65rem;
+}
+.deal-modal .input-group-text {
+    background: rgba(92, 209, 255, 0.08);
+    border-color: rgba(10, 122, 166, 0.22);
+    color: var(--aqua-deep);
+    font-weight: 700;
+    font-size: 0.82rem;
+    min-width: 2.4rem;
+    justify-content: center;
+}
+[data-theme="dark"] .deal-modal .input-group-text {
+    background: rgba(111, 216, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--aqua);
+}
+.deal-modal .form-text {
+    font-size: 0.74rem;
+    color: var(--ink-soft);
+    margin-top: 0.35rem;
+}
+
+/* ---- Footer ---- */
+.deal-modal .deal-modal-footer {
+    padding: 0.85rem 1.25rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid var(--glass-line) !important;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+[data-theme="dark"] .deal-modal .deal-modal-footer {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* ---- Delete modal warning badge ---- */
+.deal-modal .deal-warn-badge {
+    flex-shrink: 0;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.7rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.05rem;
+    color: #B91C1C;
+    background: rgba(248, 113, 113, 0.18);
+}
+[data-theme="dark"] .deal-modal .deal-warn-badge {
+    color: #FCA5A5;
+    background: rgba(248, 113, 113, 0.16);
+}
+
+/* ---- Responsive — tighter paddings ---- */
+@media (max-width: 575.98px) {
+    .deal-modal .deal-modal-body { padding: 0.9rem; }
+    .deal-modal .deal-section { padding: 0.75rem 0.85rem; }
+    .deal-modal .deal-modal-header { padding: 0.8rem 0.95rem; }
+    .deal-modal .deal-modal-footer { padding: 0.75rem 0.95rem; flex-direction: column-reverse; }
+    .deal-modal .deal-modal-footer .btn { width: 100%; }
+}
+/* =========================================================
+   DEAL MODALS — scroll-lock the body, keep footer visible
+   Applies to Create & Edit; Delete is short enough not to need it,
+   but this rule makes every .deal-modal behave consistently.
+   ========================================================= */
+
+.deal-modal .modal-content {
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Form must fill and give the body room to grow */
+.deal-modal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+/* Header + footer never scroll */
+.deal-modal .modal-header,
+.deal-modal .modal-footer {
+    flex: 0 0 auto;
+    z-index: 2;
+    position: relative;
+}
+
+/* Body is the only scroll area */
+.deal-modal .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* A tidy scrollbar that respects both themes */
+.deal-modal .modal-body::-webkit-scrollbar { width: 8px; }
+.deal-modal .modal-body::-webkit-scrollbar-thumb {
+    background: rgba(10, 122, 166, 0.28);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.deal-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(10, 122, 166, 0.5);
+    background-clip: padding-box;
+}
+[data-theme="dark"] .deal-modal .modal-body::-webkit-scrollbar-thumb {
+    background: rgba(111, 216, 255, 0.35);
+    background-clip: padding-box;
+}
+[data-theme="dark"] .deal-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(111, 216, 255, 0.55);
+    background-clip: padding-box;
+}
+.deal-modal .modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(10, 122, 166, 0.35) transparent;
+}
+[data-theme="dark"] .deal-modal .modal-body {
+    scrollbar-color: rgba(111, 216, 255, 0.4) transparent;
+}

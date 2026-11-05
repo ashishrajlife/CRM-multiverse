@@ -39,6 +39,22 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGFzaGJvYXJkXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[E:/CRM-multiverse/MultiverseCRM/Views/Deals/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbHNcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/CRM-multiverse/MultiverseCRM/Views/Deals/_CreateDealModal.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbHNcX0NyZWF0ZURlYWxNb2RhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/CRM-multiverse/MultiverseCRM/Views/Deals/_DeleteDealModal.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbHNcX0RlbGV0ZURlYWxNb2RhbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/CRM-multiverse/MultiverseCRM/Views/Deals/_EditDealModal.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRGVhbHNcX0VkaXREZWFsTW9kYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [E:/CRM-multiverse/MultiverseCRM/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

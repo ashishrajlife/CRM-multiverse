@@ -1,0 +1,50 @@
+<div class="modal fade" id="deleteDealModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg deal-modal">
+            <div class="modal-header border-bottom deal-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="modal-icon-danger rounded-3 deal-modal-icon">
+                        <i class="bi bi-trash"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Delete Deal</h6>
+                        <small class="text-muted" style="font-size:.76rem;">
+                            This action cannot be undone.
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="delete-deal-id" name="id" />
+
+                <div class="modal-body p-4">
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="deal-warn-badge"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                        <div>
+                            <p class="mb-1">
+                                You're about to permanently delete
+                                <strong id="delete-deal-title">this deal</strong>.
+                            </p>
+                            <p class="text-muted small mb-0">
+                                All related history, activity events, and revenue attribution will be removed.
+                                This cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer deal-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash me-1"></i> Delete Deal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

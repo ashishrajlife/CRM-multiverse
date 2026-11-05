@@ -1,0 +1,165 @@
+<div class="modal fade" id="addDealModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content border-0 shadow-lg deal-modal">
+            <div class="modal-header border-bottom deal-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="modal-icon-aqua rounded-3 deal-modal-icon">
+                        <i class="bi bi-briefcase-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">New Deal</h6>
+                        <small class="text-muted" style="font-size:.76rem;">
+                            Attach a lead, then set the commercial terms.
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="Create" method="post" class="deal-form d-flex flex-column" style="min-height:0; flex:1 1 auto; overflow:hidden;">
+                @Html.AntiForgeryToken()
+
+                  <div class="modal-body deal-modal-body" style="overflow-y:auto; min-height:0; flex:1 1 auto;">
+                    <!-- Lead -->
+                    <section class="deal-section">
+                        <div class="deal-section-head">
+                            <span class="deal-section-icon"><i class="bi bi-person-badge"></i></span>
+                            <span class="deal-section-title">Lead</span>
+                            <span class="deal-section-hint">Required</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-medium">
+                                    Attach Lead <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <select name="LeadId" class="form-select" required>
+                                        <option value="">— Select a lead —</option>
+                                        @foreach (var l in Model.AllLeads)
+                                        {
+                                            <option value="@l.Id">@l.Display@(l.Assigned ? " · has other deals" : "")</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-text">
+                                    Only leads created in <strong>Leads</strong> can be attached.
+                                    If a lead is missing, add it first.
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Property -->
+                    <section class="deal-section">
+                        <div class="deal-section-head">
+                            <span class="deal-section-icon"><i class="bi bi-house-door"></i></span>
+                            <span class="deal-section-title">Property</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Project</label>
+                                <input name="Project" class="form-control" placeholder="Skyline Towers" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">BHK</label>
+                                <select name="BHK" class="form-select">
+                                    <option value="">Select BHK…</option>
+                                    <option>1BHK</option>
+                                    <option>2BHK</option>
+                                    <option>3BHK</option>
+                                    <option>4BHK</option>
+                                    <option>5BHK+</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Location</label>
+                                <input name="Location" class="form-control" placeholder="Andheri West" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">City</label>
+                                <input name="City" class="form-control" placeholder="Mumbai" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Area</label>
+                                <div class="input-group">
+                                    <input name="AreaSqft" type="number" step="0.01" class="form-control" placeholder="1200" />
+                                    <span class="input-group-text">sqft</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Commercials -->
+                    <section class="deal-section">
+                        <div class="deal-section-head">
+                            <span class="deal-section-icon"><i class="bi bi-cash-stack"></i></span>
+                            <span class="deal-section-title">Commercials</span>
+                            <span class="deal-section-hint">Value required</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">
+                                    Deal Value <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">@AppOpt.Value.CurrencySymbol</span>
+                                    <input name="Value" type="number" step="0.01" required class="form-control" placeholder="0" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Expected Close</label>
+                                <input name="ExpectedCloseDate" type="date" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Booking Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">@AppOpt.Value.CurrencySymbol</span>
+                                    <input name="BookingAmount" type="number" step="0.01" class="form-control" placeholder="0" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Received Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">@AppOpt.Value.CurrencySymbol</span>
+                                    <input name="ReceivedAmount" type="number" step="0.01" class="form-control" placeholder="0" />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Stage & Owner -->
+                    <section class="deal-section">
+                        <div class="deal-section-head">
+                            <span class="deal-section-icon"><i class="bi bi-diagram-3"></i></span>
+                            <span class="deal-section-title">Stage &amp; Owner</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Stage</label>
+                                <lookup-select category="DealStage" name="Stage" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium">Owner</label>
+                                <input name="OwnerDisplayName" class="form-control" placeholder="Defaults to you" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-medium">Notes</label>
+                                <textarea name="Notes" rows="2" class="form-control" placeholder="Any internal context…"></textarea>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="modal-footer deal-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-lg me-1"></i> Save Deal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

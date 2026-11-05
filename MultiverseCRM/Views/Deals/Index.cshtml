@@ -1,0 +1,462 @@
+@model MultiverseCRM.ViewModels.DealListViewModel
+@{
+    ViewData["Title"] = "Deals";
+    var app = AppOpt.Value;
+    var stageOpts = await Lookups.GetAsync("DealStage");
+    var stageColor = stageOpts.ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
+
+    var totalPages = Math.Max(1, (int)Math.Ceiling(Model.FilteredCount / (double)Model.PageSize));
+    var firstRow = Model.FilteredCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var lastRow = Math.Min(Model.Page * Model.PageSize, Model.FilteredCount);
+
+    Dictionary<string, string> Rd(int p) => new()
+    {
+        ["stage"] = Model.ActiveStage,
+        ["status"] = Model.ActiveStatus,
+        ["search"] = Model.SearchTerm ?? "",
+        ["owner"] = Model.OwnerFilter ?? "",
+        ["sortBy"] = Model.SortBy,
+        ["sortOrder"] = Model.SortOrder,
+        ["pageSize"] = Model.PageSize.ToString(),
+        ["page"] = p.ToString()
+    };
+
+    string DealJson(MultiverseCRM.Models.Deal d) => System.Text.Json.JsonSerializer.Serialize(new
+    {
+        d.Id, d.LeadId, d.Stage, d.Project, d.BHK, d.Location, d.City, d.AreaSqft,
+        d.Value, d.BookingAmount, d.ReceivedAmount,
+        ExpectedCloseDateStr = d.ExpectedCloseDate?.ToString("yyyy-MM-dd"),
+        d.Status, d.Notes, d.Tags, d.OwnerDisplayName, d.OwnerUserName
+    });
+
+    string SortIcon(string col) => Model.SortBy != col ? "bi-arrow-down-up"
+        : (Model.SortOrder == "asc" ? "bi-arrow-up" : "bi-arrow-down");
+    string NextOrder(string col) => Model.SortBy != col ? "asc"
+        : (Model.SortOrder == "asc" ? "desc" : "asc");
+
+    bool hasStage = !string.IsNullOrWhiteSpace(Model.ActiveStage) && Model.ActiveStage != "All";
+    bool hasOwner = !string.IsNullOrWhiteSpace(Model.OwnerFilter) && Model.OwnerFilter != "All";
+    bool hasSearch = !string.IsNullOrWhiteSpace(Model.SearchTerm);
+    bool hasStatusFilter = Model.ActiveStatus != "All";
+    bool anyFilter = hasStage || hasOwner || hasSearch || hasStatusFilter;
+}
+
+<style>
+    .deals-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.9rem;
+    }
+    .deals-header .title-block h3 { margin: 0 0 0.15rem; }
+    .deals-header .title-block p { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
+
+    .deal-kpi {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .deal-kpi .kpi-card {
+        background: var(--glass);
+        -webkit-backdrop-filter: var(--blur);
+        backdrop-filter: var(--blur);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-glass);
+        overflow: hidden;
+    }
+    .deal-kpi .kpi-card .card-body {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.8rem 1rem !important;
+    }
+    .deal-kpi .kpi-icon {
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 0.8rem;
+        display: grid;
+        place-items: center;
+        font-size: 1.05rem;
+        color: #05070A;
+        background: color-mix(in srgb, var(--c, #5CD1FF) 35%, #fff);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, #5CD1FF) 45%, #fff);
+        flex-shrink: 0;
+    }
+    [data-theme="dark"] .deal-kpi .kpi-icon { color: #061018; }
+    .deal-kpi .text-muted { font-size: 0.72rem; font-weight: 600; }
+    .deal-kpi .fs-2 { font-size: 1.4rem !important; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
+
+    /* ---- Filter bar: fields left, actions right ---- */
+    .deals-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.7rem 0.85rem;
+        background: var(--glass);
+        -webkit-backdrop-filter: var(--blur);
+        backdrop-filter: var(--blur);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-glass);
+        margin-bottom: 0.65rem;
+    }
+    .deals-filters .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .deals-filters .action-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    .deals-filters .form-control,
+    .deals-filters .form-select {
+        min-height: 2.3rem;
+        font-size: 0.85rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 0.6rem;
+    }
+    .deals-filters .search-wrap {
+        flex: 0 1 260px;
+        min-width: 180px;
+        max-width: 320px;
+    }
+    .deals-filters .search-wrap .input-group-text {
+        border-radius: 0.6rem 0 0 0.6rem;
+    }
+    .deals-filters .action-group .btn {
+        min-height: 2.3rem;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 0.75rem;
+    }
+    /* ---- Scroll-locked table ---- */
+    .deals-table-wrap {
+        height: calc(100dvh - 22rem);
+        min-height: 24rem;
+    }
+    .deals-table-wrap .table-container {
+        height: 100%;
+        margin: 0;
+    }
+
+    /* ---- Centre every cell (th + td) ---- */
+    .deals-table-wrap .premium-table thead th,
+    .deals-table-wrap .premium-table tbody td {
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+
+    /* Header sort link inherits centering */
+    .deals-table-wrap .premium-table th .sort-header {
+        color: var(--ink);
+        font-weight: 800;
+        justify-content: center;
+    }
+    .deals-table-wrap .premium-table th .sort-header:hover { color: var(--aqua-deep); }
+
+    /* Lead cell secondary line */
+    .deal-lead-label {
+        font-size: 0.72rem;
+        color: var(--ink-soft);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .deal-lead-label i { font-size: 0.65rem; opacity: 0.75; margin-right: 3px; }
+
+    /* Notes / tags truncation */
+    .cell-truncate {
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 767.98px) {
+        .deals-table-wrap { height: calc(100dvh - 20rem); min-height: 22rem; }
+        .deals-filters .action-group { margin-left: 0; width: 100%; justify-content: flex-end; }
+    }
+</style>
+
+<!-- Page header -->
+<div class="deals-header">
+    <div class="title-block">
+        <h3 class="fw-bold mb-0">Deals</h3>
+        <p>Attach a lead to a deal, track value, close with confidence.</p>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm px-3"
+            data-bs-toggle="modal" data-bs-target="#addDealModal">
+        <i class="bi bi-plus-lg me-1"></i> New Deal
+    </button>
+</div>
+
+<!-- KPI strip -->
+<div class="deal-kpi">
+    <div class="kpi-card">
+        <div class="card-body">
+            <div class="kpi-icon" style="--c:#5CD1FF"><i class="bi bi-briefcase"></i></div>
+            <div>
+                <div class="text-muted">Total Deals</div>
+                <div class="fs-2">@Model.TotalCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="card-body">
+            <div class="kpi-icon" style="--c:#f59e0b"><i class="bi bi-graph-up-arrow"></i></div>
+            <div>
+                <div class="text-muted">Open Pipeline</div>
+                <div class="fs-2">@app.CurrencySymbol @Model.TotalPipelineValue.ToString("N0")</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="card-body">
+            <div class="kpi-icon" style="--c:#16a34a"><i class="bi bi-trophy"></i></div>
+            <div>
+                <div class="text-muted">Won</div>
+                <div class="fs-2">@app.CurrencySymbol @Model.TotalWonValue.ToString("N0")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="deals-filters" id="dealFilterForm">
+    <input type="hidden" name="sortBy" value="@Model.SortBy" />
+    <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
+    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+    <!-- LEFT: filter fields -->
+    <div class="filter-group">
+        <select name="stage" class="form-select form-select-sm" style="max-width: 145px;">
+            <option value="All" selected="@(Model.ActiveStage == "All")">All stages</option>
+            @foreach (var s in stageOpts)
+            {
+                <option value="@s.Value" selected="@(Model.ActiveStage == s.Value)">@(s.Label ?? s.Value)</option>
+            }
+        </select>
+
+        <select name="owner" class="form-select form-select-sm" style="max-width: 145px;">
+            <option value="" selected="@string.IsNullOrWhiteSpace(Model.OwnerFilter)">All owners</option>
+            @foreach (var o in Model.AllOwners)
+            {
+                <option value="@o" selected="@(Model.OwnerFilter == o)">@o</option>
+            }
+        </select>
+
+        <select name="status" class="form-select form-select-sm" style="max-width: 130px;">
+            <option value="All" selected="@(Model.ActiveStatus == "All")">All</option>
+            <option value="Open" selected="@(Model.ActiveStatus == "Open")">Open</option>
+            <option value="Won" selected="@(Model.ActiveStatus == "Won")">Won</option>
+            <option value="Lost" selected="@(Model.ActiveStatus == "Lost")">Lost</option>
+        </select>
+
+        <div class="input-group input-group-sm search-wrap">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="dealSearch" name="search" value="@Model.SearchTerm"
+                   class="form-control border-start-0" placeholder="Search deals…" autocomplete="off" />
+        </div>
+    </div>
+
+    <!-- RIGHT: actions pinned to the extreme right -->
+    <div class="action-group">
+        <button type="submit" class="btn btn-primary btn-sm px-3">
+            <i class="bi bi-search me-1"></i> Search
+        </button>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm px-3" title="Reset all filters">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+        </a>
+    </div>
+</form>
+
+<!-- Scroll-locked table with all fields -->
+<div class="deals-table-wrap">
+    <div class="table-container">
+        <div class="table-scroll-area">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th class="sticky-col-left">Deal / Lead</th>
+                        <th>Stage</th>
+                        <th>
+                            <a class="sort-header" asp-action="Index"
+                               asp-route-sortBy="Value" asp-route-sortOrder="@NextOrder("Value")"
+                               asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                               asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Value <i class="bi @SortIcon("Value")"></i>
+                            </a>
+                        </th>
+                        <th>Booking</th>
+                        <th>Received</th>
+                        <th>Balance</th>
+                        <th>Project</th>
+                        <th>BHK</th>
+                        <th>Location</th>
+                        <th>City</th>
+                        <th>Area</th>
+                        <th>
+                            <a class="sort-header" asp-action="Index"
+                               asp-route-sortBy="ExpectedCloseDate" asp-route-sortOrder="@NextOrder("ExpectedCloseDate")"
+                               asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                               asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Expected Close <i class="bi @SortIcon("ExpectedCloseDate")"></i>
+                            </a>
+                        </th>
+                        <th>Closed At</th>
+                        <th>Owner</th>
+                        <th>Status</th>
+                        <th>Tags</th>
+                        <th>Notes</th>
+                        <th style="min-width: 11rem;">
+                            <a class="sort-header" asp-action="Index"
+                            asp-route-sortBy="CreatedAt" asp-route-sortOrder="@NextOrder("CreatedAt")"
+                            asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                            asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Created <i class="bi @SortIcon("CreatedAt")"></i>
+                            </a>
+                        </th>
+                        <th style="min-width: 11rem;">
+                            <a class="sort-header" asp-action="Index"
+                            asp-route-sortBy="UpdatedAt" asp-route-sortOrder="@NextOrder("UpdatedAt")"
+                            asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                            asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Updated <i class="bi @SortIcon("UpdatedAt")"></i>
+                            </a>
+                        </th>
+                        <th class="sticky-col-right text-center" style="min-width: 100px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Deals)
+                    {
+                        var balance = d.Value - (d.ReceivedAmount ?? 0);
+                        <tr>
+                            <td class="sticky-col-left">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="lead-avatar">@Format.Initials(d.Lead?.FullName ?? d.Project ?? "D")</span>
+                                    <div style="min-width:0">
+                                        <div class="fw-semibold text-dark text-truncate">@(d.Project ?? $"Deal #{d.Id}")</div>
+                                        @if (d.Lead != null)
+                                        {
+                                            <div class="deal-lead-label">
+                                                <i class="bi bi-person"></i>@d.Lead.FullName
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="deal-lead-label text-muted">
+                                                <i class="bi bi-person-dash"></i>No lead
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="pill" style="--pill:@stageColor.GetValueOrDefault(d.Stage, "#64748b")">@d.Stage</span></td>
+                            <td class="fw-medium">@app.CurrencySymbol @d.Value.ToString("N0")</td>
+                            <td>@(d.BookingAmount.HasValue ? app.CurrencySymbol + " " + d.BookingAmount.Value.ToString("N0") : "—")</td>
+                            <td>@(d.ReceivedAmount.HasValue ? app.CurrencySymbol + " " + d.ReceivedAmount.Value.ToString("N0") : "—")</td>
+                            <td class="@(balance > 0 ? "text-danger fw-medium" : "text-success fw-medium")">
+                                @app.CurrencySymbol @balance.ToString("N0")
+                            </td>
+                            <td>@(d.Project ?? "—")</td>
+                            <td>@(d.BHK ?? "—")</td>
+                            <td>@(d.Location ?? "—")</td>
+                            <td>@(d.City ?? "—")</td>
+                            <td>@(d.AreaSqft.HasValue ? d.AreaSqft.Value.ToString("N0") + " sqft" : "—")</td>
+                            <td>@(d.ExpectedCloseDate?.ToString("dd MMM yy") ?? "—")</td>
+                            <td>@(d.ClosedAt?.ToString("dd MMM yy, hh:mm tt") ?? "—")</td>
+                            <td>@(d.OwnerDisplayName ?? "—")</td>
+                            <td>
+                                @if (d.Status == "Won") { <span class="badge-soft-success">Won</span> }
+                                else if (d.Status == "Lost") { <span class="badge-soft-warning">Lost</span> }
+                                else { <span class="badge-soft-primary">Open</span> }
+                            </td>
+                            <td class="cell-truncate" title="@d.Tags">@(d.Tags ?? "—")</td>
+                            <td class="cell-truncate" title="@d.Notes">@(d.Notes ?? "—")</td>
+                            <td class="text-muted" title="@Format.Ago(d.CreatedAt)">
+                                @Format.Stamp(d.CreatedAt, app.TimeZone, "dd MMM yyyy, hh:mm tt")
+                            </td>
+                            <td class="text-muted" title="@Format.Ago(d.UpdatedAt)">
+                                @Format.Stamp(d.UpdatedAt, app.TimeZone, "dd MMM yyyy, hh:mm tt")
+                            </td>
+                            <td class="sticky-col-right text-center">
+                                <button class="btn btn-sm btn-link text-primary p-1 btn-edit-deal"
+                                        data-deal='@DealJson(d)'
+                                        data-bs-toggle="modal" data-bs-target="#editDealModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-link text-danger p-1 btn-delete-deal"
+                                        data-id="@d.Id" data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                                        data-bs-toggle="modal" data-bs-target="#deleteDealModal">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Deals.Any())
+                    {
+                        <tr><td colspan="20" class="text-center py-5 text-muted">
+                            <i class="bi bi-briefcase fs-2 d-block mb-2"></i>No deals found.
+                        </td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div class="text-muted small">Showing @(firstRow)–@(lastRow) of @Model.FilteredCount</div>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-sm btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")"
+                   asp-action="Index" asp-all-route-data="Rd(Model.Page - 1)"><i class="bi bi-chevron-left"></i></a>
+                <span class="small text-muted">Page @Model.Page / @totalPages</span>
+                <a class="btn btn-sm btn-outline-secondary @(Model.Page >= totalPages ? "disabled" : "")"
+                   asp-action="Index" asp-all-route-data="Rd(Model.Page + 1)"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_CreateDealModal" />
+<partial name="_EditDealModal" />
+<partial name="_DeleteDealModal" />
+
+@section Scripts {
+    <script>
+        // ---------- Edit / Delete single ----------
+        document.addEventListener('click', (e) => {
+            const del = e.target.closest('.btn-delete-deal');
+            if (del) {
+                document.getElementById('delete-deal-id').value = del.dataset.id;
+                document.getElementById('delete-deal-title').textContent = del.dataset.title || 'this deal';
+                return;
+            }
+
+            const btn = e.target.closest('.btn-edit-deal');
+            if (!btn) return;
+            const d = JSON.parse(btn.dataset.deal);
+            for (const [key, val] of Object.entries(d)) {
+                const el = document.getElementById('deal-' + key.charAt(0).toUpperCase() + key.slice(1));
+                if (!el) continue;
+                el.value = val ?? '';
+            }
+        });
+    </script>
+}
