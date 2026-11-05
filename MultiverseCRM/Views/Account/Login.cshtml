@@ -1,85 +1,196 @@
-@{ Layout = null; }
+@{
+    Layout = null;
+    var brand = AppOpt.Value.BrandName;
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Sign in - @AppOpt.Value.BrandName</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="theme-color" content="#04202E" />
+    <title>Sign in — @brand</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="login-page">
-    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <main class="login-split" aria-label="Sign in to @brand">
 
-    <main class="login-card" id="loginCard">
-        <div class="login-logo"><i class="bi bi-buildings-fill"></i></div>
-        <h1 class="login-title">@AppOpt.Value.BrandName</h1>
-        <p class="login-sub">Sign in to manage leads, site visits and deals.</p>
+        <!-- ============ LEFT: cinematic visual ============ -->
+        <aside class="login-visual">
+            <div class="lv-brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="img">
+                        <path d="M4 17 9 7l4 6 3-4 4 8" />
+                    </svg>
+                </span>
+                <span>@brand</span>
+            </div>
 
-        <form id="loginForm" method="post" novalidate>
-            <div class="field">
-                <i class="bi bi-person"></i>
-                <input name="username" class="form-control" placeholder="Username" autocomplete="username" required autofocus />
+            <div class="lv-stage" aria-hidden="true">
+                <div class="lv-orbit">
+                    <svg class="lv-inf" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                            <linearGradient id="lvGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%"  stop-color="#9BE5FF" />
+                                <stop offset="50%" stop-color="#5CD1FF" />
+                                <stop offset="100%" stop-color="#2BB9F2" />
+                            </linearGradient>
+                        </defs>
+                        <path class="base" d="M12,62 C24,26 42,22 50,50 C58,78 76,74 88,38" />
+                        <path class="base" d="M12,38 C24,74 42,78 50,50 C58,22 76,26 88,62" />
+                        <path class="run"     d="M12,62 C24,26 42,22 50,50 C58,78 76,74 88,38" />
+                        <path class="run two" d="M12,38 C24,74 42,78 50,50 C58,22 76,26 88,62" />
+                    </svg>
+
+                    <div class="gc gc-lead">
+                        <div class="gc-row">
+                            <span class="gc-avatar">AR</span>
+                            <div>
+                                <strong>Ananya R.</strong>
+                                <small>Hot lead · ₹ 1.2 Cr</small>
+                            </div>
+                            <span class="gc-pill">New</span>
+                        </div>
+                    </div>
+
+                    <div class="gc gc-pipe">
+                        <div class="gc-title">Pipeline</div>
+                        <div class="gc-bar"><span>Qualified</span><i style="--w:64%"></i><b>64%</b></div>
+                        <div class="gc-bar"><span>Site visit</span><i style="--w:48%"></i><b>48%</b></div>
+                        <div class="gc-bar"><span>Negotiation</span><i style="--w:31%"></i><b>31%</b></div>
+                    </div>
+
+                    <div class="gc gc-visit">
+                        <div class="gc-row">
+                            <span class="gc-ico"><i class="bi bi-geo-alt-fill"></i></span>
+                            <div>
+                                <strong>Site visit booked</strong>
+                                <small>Skyline Towers · 4:30 PM</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gc gc-follow">
+                        <div class="gc-row">
+                            <span class="gc-ico wa"><i class="bi bi-whatsapp"></i></span>
+                            <div>
+                                <strong>Follow-up sent</strong>
+                                <small>WhatsApp · 2 min ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="field">
-                <i class="bi bi-lock"></i>
-                <input id="pw" type="password" name="password" class="form-control" placeholder="Password" autocomplete="current-password" required />
-                <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password"><i class="bi bi-eye"></i></button>
+
+            <div class="lv-copy">
+                <h2 class="lv-title">Close more deals, with less busywork.</h2>
+                <p class="lv-sub">Leads, site visits, and follow-ups in one calm workspace — built for teams that move fast.</p>
             </div>
-            <button id="loginBtn" type="submit" class="btn login-btn w-100">
-                <span class="label">Sign in</span><span class="spinner-border spinner-border-sm d-none"></span>
-            </button>
-        </form>
+        </aside>
+
+        <!-- ============ RIGHT: sign-in panel ============ -->
+        <section class="login-panel">
+            <form class="login-card" id="loginCard" method="post" novalidate aria-labelledby="loginTitle">
+                <h1 class="login-title" id="loginTitle">Welcome back</h1>
+                <p class="login-sub">Sign in to manage leads, site visits and deals.</p>
+
+                <div class="field">
+                    <label class="form-label" for="username">Username</label>
+                    <div class="field-wrap">
+                        <i class="bi bi-person" aria-hidden="true"></i>
+                        <input id="username" name="username" class="form-control" placeholder="you@company.com" autocomplete="username" required autofocus />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="form-label" for="pw">Password</label>
+                    <div class="field-wrap">
+                        <i class="bi bi-lock" aria-hidden="true"></i>
+                        <input id="pw" type="password" name="password" class="form-control" placeholder="••••••••" autocomplete="current-password" required />
+                        <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" aria-pressed="false">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="loginBtn" type="submit" class="btn login-btn w-100">
+                    <span class="label">Sign in</span>
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <p class="login-foot">© @DateTime.Now.Year @brand — Crafted for ambitious teams.</p>
+        </section>
     </main>
 
     <div class="toast-stack" id="toastStack"></div>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const form = document.getElementById('loginForm'), btn = document.getElementById('loginBtn'),
-              card = document.getElementById('loginCard'), stack = document.getElementById('toastStack');
+        (() => {
+            const form = document.getElementById('loginCard'),
+                  btn  = document.getElementById('loginBtn'),
+                  pw   = document.getElementById('pw'),
+                  toggle = document.getElementById('pwToggle'),
+                  stack = document.getElementById('toastStack');
 
-        function toast(msg, type) {
-            const el = document.createElement('div');
-            el.className = `toast align-items-center text-bg-${type} border-0`;
-            el.innerHTML = '<div class="d-flex"><div class="toast-body"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
-            el.querySelector('.toast-body').textContent = msg;
-            stack.appendChild(el);
-            el.addEventListener('hidden.bs.toast', () => el.remove());
-            new bootstrap.Toast(el, { delay: 3500 }).show();
-        }
-        function busy(on) {
-            btn.disabled = on;
-            btn.querySelector('.label').classList.toggle('d-none', on);
-            btn.querySelector('.spinner-border').classList.toggle('d-none', !on);
-        }
+            function toast(msg, type) {
+                const el = document.createElement('div');
+                el.className = `toast align-items-center text-bg-${type} border-0`;
+                el.innerHTML = '<div class="d-flex"><div class="toast-body"></div>' +
+                               '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+                el.querySelector('.toast-body').textContent = msg;
+                stack.appendChild(el);
+                el.addEventListener('hidden.bs.toast', () => el.remove());
+                new bootstrap.Toast(el, { delay: 3500 }).show();
+            }
 
-        document.getElementById('pwToggle').addEventListener('click', () => {
-            const pw = document.getElementById('pw'), show = pw.type === 'password';
-            pw.type = show ? 'text' : 'password';
-            document.querySelector('#pwToggle i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
-        });
+            function busy(on) {
+                btn.disabled = on;
+                btn.querySelector('.label').classList.toggle('d-none', on);
+                btn.querySelector('.spinner-border').classList.toggle('d-none', !on);
+            }
 
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            if (!form.checkValidity()) { toast('Enter your username and password.', 'warning'); return; }
-            busy(true);
-            try {
-                const res = await fetch(form.getAttribute('action') || location.pathname, {
-                    method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(form)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    toast('Signed in. Redirecting…', 'success');
-                    setTimeout(() => location.href = data.redirectUrl, 700);
-                } else {
-                    toast(data.message, 'danger');
-                    card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 500);
+            toggle.addEventListener('click', () => {
+                const show = pw.type === 'password';
+                pw.type = show ? 'text' : 'password';
+                toggle.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+                toggle.setAttribute('aria-pressed', show ? 'true' : 'false');
+                toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+                pw.focus();
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!form.checkValidity()) {
+                    toast('Enter your username and password.', 'warning');
+                    return;
+                }
+                busy(true);
+                try {
+                    const res = await fetch(form.getAttribute('action') || location.pathname, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: new FormData(form)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        toast('Signed in. Redirecting…', 'success');
+                        setTimeout(() => location.href = data.redirectUrl, 650);
+                    } else {
+                        toast(data.message || 'Invalid credentials.', 'danger');
+                        form.classList.add('shake');
+                        setTimeout(() => form.classList.remove('shake'), 500);
+                        busy(false);
+                    }
+                } catch {
+                    toast('Something went wrong. Please try again.', 'danger');
                     busy(false);
                 }
-            } catch { toast('Something went wrong. Please try again.', 'danger'); busy(false); }
-        });
+            });
+        })();
     </script>
 </body>
 </html>

@@ -1,17 +1,17 @@
 <div class="modal fade" id="editLeadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-            <div class="modal-header border-bottom bg-light">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="text-warning rounded p-2" style="background:#fff7e6;">
+                    <div class="modal-icon-warning rounded p-2">
                         <i class="bi bi-pencil-square"></i>
                     </div>
                     <div>
                         <h6 class="mb-0 fw-bold">Edit Lead</h6>
-                        <small class="text-muted" style="font-size:0.75rem;">Update lead details and save changes.</small>
+                        <small class="text-muted" style="font-size:.75rem;">Update lead details and save changes.</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <form asp-action="Edit" method="post" style="display:flex; flex-direction:column; min-height:0; flex:1 1 auto;">
@@ -19,7 +19,7 @@
                 <input type="hidden" id="edit-Id" name="Id" />
 
                 <div class="modal-body p-4" style="overflow-y:auto;">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-info-circle me-1"></i> Basic Information</h6>
+                    <h6 class="fw-bold mb-3" style="color:var(--aqua-deep);"><i class="bi bi-info-circle me-1"></i> Basic Information</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label small fw-medium">Full Name <span class="text-danger">*</span></label>
@@ -28,7 +28,7 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-medium">Phone <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light">@AppOpt.Value.PhonePrefix</span>
+                                <span class="input-group-text">@AppOpt.Value.PhonePrefix</span>
                                 <input id="edit-Phone" name="Phone" class="form-control" inputmode="tel" required />
                             </div>
                         </div>
@@ -51,7 +51,7 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-medium">Alternate Mobile</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light">@AppOpt.Value.PhonePrefix</span>
+                                <span class="input-group-text">@AppOpt.Value.PhonePrefix</span>
                                 <input id="edit-AltPhone" name="AltPhone" class="form-control" inputmode="tel" />
                             </div>
                         </div>
@@ -69,7 +69,7 @@
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-cash me-1"></i> Budget & Area</h6>
+                    <h6 class="fw-bold mb-3" style="color:var(--aqua-deep);"><i class="bi bi-cash me-1"></i> Budget &amp; Area</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-6 col-md-3">
                             <label class="form-label small fw-medium">Min Price</label>
@@ -97,7 +97,7 @@
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-chat-dots me-1"></i> Remarks & Tags</h6>
+                    <h6 class="fw-bold mb-3" style="color:var(--aqua-deep);"><i class="bi bi-chat-dots me-1"></i> Remarks &amp; Tags</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-12">
                             <label class="form-label small fw-medium">Latest Remark</label>
@@ -121,7 +121,7 @@
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-house-door me-1"></i> Property Preference</h6>
+                    <h6 class="fw-bold mb-3" style="color:var(--aqua-deep);"><i class="bi bi-house-door me-1"></i> Property Preference</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label small fw-medium">Project</label>
@@ -141,7 +141,7 @@
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-badge me-1"></i> Customer Details</h6>
+                    <h6 class="fw-bold mb-3" style="color:var(--aqua-deep);"><i class="bi bi-person-badge me-1"></i> Customer Details</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label small fw-medium">Customer Type</label>
@@ -170,8 +170,8 @@
                     </div>
                 </div>
 
-                <div class="modal-footer border-top bg-light d-flex justify-content-between">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
+                <div class="modal-footer border-top d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-lg me-1"></i> Cancel
                     </button>
                     <button type="submit" class="btn btn-warning px-4">

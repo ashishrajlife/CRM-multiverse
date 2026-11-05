@@ -39,31 +39,27 @@
 <style>
     /* ===== Lead table styling ===== */
     .premium-table thead th {
-        color: #111827 !important;          /* black headers */
-        font-weight: 600;
+        color: var(--ink) !important;
+        font-weight: 900;
         vertical-align: middle;
         text-align: center;
     }
 
-    /* center all body cells by default */
     .premium-table tbody td {
         vertical-align: middle;
         text-align: center;
     }
 
-    /* keep sticky columns readable (name + actions) */
     .premium-table .sticky-col-left:not(:first-child),
     .premium-table .sticky-col-right {
         text-align: left;
     }
     .premium-table .sticky-col-right { text-align: center; }
 
-    /* the Name & Contact cell should stay left-aligned */
     .premium-table td.sticky-col-left .d-flex {
         text-align: left;
     }
 
-    /* header checkbox alignment */
     .premium-table thead th .form-check-input {
         float: none;
         margin: 0;
@@ -75,13 +71,23 @@
         align-items: center;
         gap: .75rem;
         padding: .6rem 1rem;
-        background: #fef2f2;
-        border: 1px solid #fecaca;
+        background: rgba(248,113,113,.12);
+        border: 1px solid rgba(248,113,113,.35);
         border-radius: 10px;
         margin-bottom: 1rem;
+        color: var(--ink);
     }
     .bulk-bar.show { display: flex; }
-    .bulk-bar .bulk-count { color: #b91c1c; font-weight: 600; font-size: .9rem; }
+    .bulk-bar .bulk-count { color: #DC2626; font-weight: 600; font-size: .9rem; }
+    [data-theme="dark"] .bulk-bar .bulk-count { color: #FCA5A5; }
+
+    /* Color swatches in modal headers */
+    .modal-icon-aqua   { background: rgba(92,209,255,.18); color: var(--aqua-deep); }
+    .modal-icon-danger { background: rgba(248,113,113,.18); color: #DC2626; }
+    .modal-icon-warning{ background: rgba(251,191,36,.20); color: #B45309; }
+    [data-theme="dark"] .modal-icon-aqua   { background: rgba(111,216,255,.20); color: var(--aqua); }
+    [data-theme="dark"] .modal-icon-danger { background: rgba(248,113,113,.20); color: #FCA5A5; }
+    [data-theme="dark"] .modal-icon-warning{ background: rgba(251,191,36,.20); color: #FDE68A; }
 </style>
 
 <!-- Toolbar -->
@@ -165,21 +171,21 @@
                     </th>
                     <th class="sticky-col-left" style="min-width: 220px;">Name & Contact</th>
 
-                    <th>
-                        <a class="sort-header" asp-action="Index"
-                           asp-route-sortBy="CreatedAt" asp-route-sortOrder="@NextOrder("CreatedAt")"
-                           asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
-                            Date/Time <i class="bi @SortIcon("CreatedAt")"></i>
-                        </a>
-                    </th>
+               <th style="min-width: 11.5rem;">
+                    <a class="sort-header" asp-action="Index"
+                    asp-route-sortBy="CreatedAt" asp-route-sortOrder="@NextOrder("CreatedAt")"
+                    asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
+                        Date/Time <i class="bi @SortIcon("CreatedAt")"></i>
+                    </a>
+                </th>
 
-                    <th>
-                        <a class="sort-header" asp-action="Index"
-                           asp-route-sortBy="UpdatedAt" asp-route-sortOrder="@NextOrder("UpdatedAt")"
-                           asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
-                            Updated <i class="bi @SortIcon("UpdatedAt")"></i>
-                        </a>
-                    </th>
+                <th style="min-width: 11.5rem;">
+                    <a class="sort-header" asp-action="Index"
+                    asp-route-sortBy="UpdatedAt" asp-route-sortOrder="@NextOrder("UpdatedAt")"
+                    asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
+                        Updated <i class="bi @SortIcon("UpdatedAt")"></i>
+                    </a>
+                </th>
 
                     <th>Priority</th>
                     <th>Email</th>
@@ -227,17 +233,26 @@
                                         @lead.FullName
                                         @if (lead.Duplicate) { <span class="badge text-bg-warning ms-1">Duplicate</span> }
                                     </div>
-                                    <div class="lead-contact">
-                                        <a href="tel:@(app.PhonePrefix)@lead.Phone">@app.PhonePrefix @lead.Phone</a>
-                                        <a class="wa" target="_blank" rel="noopener" title="WhatsApp"
-                                           href="https://wa.me/@(app.PhonePrefix.TrimStart('+'))@lead.Phone"><i class="bi bi-whatsapp"></i></a>
-                                    </div>
+                                 <div class="lead-contact">
+                                    <a href="tel:@(app.PhonePrefix)@lead.Phone">@app.PhonePrefix @lead.Phone</a>
+                                    <a class="wa" target="_blank" rel="noopener" title="WhatsApp"
+                                    href="https://wa.me/@(app.PhonePrefix.TrimStart('+'))@lead.Phone"><i class="bi bi-whatsapp"></i></a>
+                                    <button type="button" class="copy-phone" title="Copy number"
+                                            aria-label="Copy phone number"
+                                            data-phone="@(app.PhonePrefix)@lead.Phone">
+                                      <i class="bi bi-files"></i>
+                                    </button>
+                                </div>
                                 </div>
                             </div>
                         </td>
 
-                        <td class="text-muted" title="@Format.Stamp(lead.CreatedAt, app.TimeZone)">@Format.Ago(lead.CreatedAt)</td>
-                        <td class="text-muted" title="@Format.Stamp(lead.UpdatedAt, app.TimeZone)">@Format.Ago(lead.UpdatedAt)</td>
+                     <td class="text-muted" title="@Format.Ago(lead.CreatedAt)">
+                            @Format.Stamp(lead.CreatedAt, app.TimeZone, "dd MMM yyyy, hh:mm tt")
+                        </td>
+                        <td class="text-muted" title="@Format.Ago(lead.UpdatedAt)">
+                            @Format.Stamp(lead.UpdatedAt, app.TimeZone, "dd MMM yyyy, hh:mm tt")
+                        </td>
                         <td><span class="pill" style="--pill:@priorityColor.GetValueOrDefault(lead.Priority, "#64748b")">@lead.Priority</span></td>
                         <td>@(lead.Email ?? "-")</td>
                         <td>@(lead.Source ?? "-")</td>
@@ -546,6 +561,47 @@ importForm?.addEventListener('submit', async e => {
         importErr.classList.remove('d-none');
     } finally {
         setBusy(false);
+    }
+});
+
+// ---- Copy phone number ----
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.copy-phone');
+    if (!btn) return;
+    e.preventDefault();
+
+    const phone = btn.dataset.phone || '';
+    if (!phone) return;
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(phone);
+        } else {
+            // Fallback for http:// or older browsers
+            const ta = document.createElement('textarea');
+            ta.value = phone;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+
+        // Swap icon → check for 1.2s
+        const icon = btn.querySelector('i');
+        if (icon) {
+            const prev = icon.className;
+            icon.className = 'bi bi-check2';
+            btn.classList.add('is-copied');
+            setTimeout(() => {
+                icon.className = prev;
+                btn.classList.remove('is-copied');
+            }, 1200);
+        }
+    } catch (err) {
+        console.warn('Copy failed:', err);
     }
 });
     </script>

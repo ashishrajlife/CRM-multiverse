@@ -1,39 +1,65 @@
-<div class="modal fade" id="deleteLeadModal" tabindex="-1" aria-hidden="true">
+<!-- Import Modal -->
+<div class="modal fade" id="importLeadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-            <div class="modal-header border-bottom bg-light">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="text-danger rounded p-2" style="background:#fee2e2;">
-                        <i class="bi bi-trash"></i>
+                    <div class="modal-icon-aqua rounded p-2">
+                        <i class="bi bi-upload"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0 fw-bold">Delete Lead</h6>
-                        <small class="text-muted" style="font-size:0.75rem;">This action cannot be undone.</small>
+                        <h6 class="mb-0 fw-bold">Import Leads</h6>
+                        <small class="text-muted" style="font-size:.75rem;">Upload .xlsx or .csv (max 20 MB).</small>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form asp-action="Delete" method="post">
+            <form id="importForm">
                 @Html.AntiForgeryToken()
-                <input type="hidden" id="delete-Id" name="id" />
-
                 <div class="modal-body p-4">
-                    <p class="mb-0">
-                        Are you sure you want to delete
-                        <strong id="delete-lead-name">this lead</strong>?
-                    </p>
+                    <label class="form-label small fw-medium">Choose file</label>
+                    <input type="file" id="importFile" name="file" accept=".xlsx,.csv" class="form-control" required />
+                    <div class="form-text">Required columns: <code>FullName</code>, <code>Phone</code>. Duplicates by phone are skipped.</div>
+                    <div id="importError" class="alert alert-danger d-none mt-3 mb-0 small"></div>
                 </div>
-
-                <div class="modal-footer border-top bg-light d-flex justify-content-between">
-                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
-                        <i class="bi bi-x-lg me-1"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn btn-danger px-4">
-                        <i class="bi bi-trash me-1"></i> Delete
+                <div class="modal-footer border-top d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4" id="importBtn">
+                        <span class="label">Upload &amp; Import</span>
+                        <span class="spinner-border spinner-border-sm d-none"></span>
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal fade" id="importResultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
+                <h6 class="mb-0 fw-bold">Import Result</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="importSummary" class="mb-3"></div>
+                <div class="table-responsive" style="max-height:400px;">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Row</th><th>Name</th><th>Phone</th><th>Status</th><th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importResultBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+                        onclick="location.reload()">Done</button>
+            </div>
         </div>
     </div>
 </div>
