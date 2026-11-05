@@ -498,7 +498,7 @@ a { text-underline-offset: 3px; }
     box-shadow: var(--shadow-glass);
     overflow: hidden;
     height: calc(100dvh - 18.1rem);
-    min-height: 26rem;
+    min-height: 25rem;
 }
 .table-scroll-area {
     overflow: auto;

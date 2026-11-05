@@ -153,7 +153,6 @@
         min-height: 24rem;
     }
     .deals-table-wrap .table-container {
-        height: 100%;
         margin: 0;
     }
 
@@ -196,18 +195,6 @@
     }
 </style>
 
-<!-- Page header -->
-<div class="deals-header">
-    <div class="title-block">
-        <h3 class="fw-bold mb-0">Deals</h3>
-        <p>Attach a lead to a deal, track value, close with confidence.</p>
-    </div>
-    <button type="button" class="btn btn-primary btn-sm px-3"
-            data-bs-toggle="modal" data-bs-target="#addDealModal">
-        <i class="bi bi-plus-lg me-1"></i> New Deal
-    </button>
-</div>
-
 <!-- KPI strip -->
 <div class="deal-kpi">
     <div class="kpi-card">
@@ -244,8 +231,16 @@
     <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
     <input type="hidden" name="pageSize" value="@Model.PageSize" />
 
-    <!-- LEFT: filter fields -->
+    <!-- LEFT: New Deal button + filter fields -->
     <div class="filter-group">
+
+        <!-- New Deal button — pinned first -->
+        <button type="button" class="btn btn-primary btn-sm px-3"
+                data-bs-toggle="modal" data-bs-target="#addDealModal">
+            <i class="bi bi-plus-lg me-1"></i> New Deal
+        </button>
+
+        <!-- Stage -->
         <select name="stage" class="form-select form-select-sm" style="max-width: 145px;">
             <option value="All" selected="@(Model.ActiveStage == "All")">All stages</option>
             @foreach (var s in stageOpts)
@@ -254,6 +249,7 @@
             }
         </select>
 
+        <!-- Owner -->
         <select name="owner" class="form-select form-select-sm" style="max-width: 145px;">
             <option value="" selected="@string.IsNullOrWhiteSpace(Model.OwnerFilter)">All owners</option>
             @foreach (var o in Model.AllOwners)
@@ -262,6 +258,7 @@
             }
         </select>
 
+        <!-- Status -->
         <select name="status" class="form-select form-select-sm" style="max-width: 130px;">
             <option value="All" selected="@(Model.ActiveStatus == "All")">All</option>
             <option value="Open" selected="@(Model.ActiveStatus == "Open")">Open</option>
@@ -269,6 +266,7 @@
             <option value="Lost" selected="@(Model.ActiveStatus == "Lost")">Lost</option>
         </select>
 
+        <!-- Search input -->
         <div class="input-group input-group-sm search-wrap">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
             <input type="text" id="dealSearch" name="search" value="@Model.SearchTerm"
