@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MultiverseCRM.Data;
+using MultiverseCRM.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,9 +20,10 @@ builder.Services.AddAuthentication("MyCookieAuth").AddCookie("MyCookieAuth", opt
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 });
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<MultiverseCRM.Services.ILookupService, MultiverseCRM.Services.LookupService>();
-builder.Services.AddScoped<MultiverseCRM.Services.ILeadImportExportService, MultiverseCRM.Services.LeadImportExportService>();
-builder.Services.Configure<MultiverseCRM.Services.AppOptions>(builder.Configuration.GetSection("App"));
+builder.Services.AddScoped<ILookupService,LookupService>();
+builder.Services.AddScoped<ILeadImportExportService,LeadImportExportService>();
+builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
+builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
     
 
 var app = builder.Build();

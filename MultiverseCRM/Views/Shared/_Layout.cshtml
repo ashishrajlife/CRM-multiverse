@@ -19,35 +19,31 @@
     <meta name="theme-color" content="#E6F8FF" id="metaThemeColor" />
     <title>@ViewData["Title"] - @AppOpt.Value.BrandName</title>
 
-   <!-- Theme bootstrap: runs before CSS paints, no flash. Robust against storage blocks. -->
-<script>
-    (function () {
-        var theme = 'light';
-        try {
-            var saved = localStorage.getItem('mv-theme');
-            if (saved === 'dark' || saved === 'light') {
-                theme = saved;
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                theme = 'dark';
-            }
-        } catch (e) {
-            // localStorage blocked — still check system pref
+    <script>
+        (function () {
+            var theme = 'light';
             try {
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                var saved = localStorage.getItem('mv-theme');
+                if (saved === 'dark' || saved === 'light') { theme = saved; }
+                else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                     theme = 'dark';
                 }
-            } catch (_) {}
-        }
-        document.documentElement.setAttribute('data-theme', theme);
-    })();
-</script>
+            } catch (e) {
+                try {
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        theme = 'dark';
+                    }
+                } catch (_) {}
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <style>
-        /* Layout-only helpers. All visual styling lives in site.css. */
         .top-header .header-actions { gap: .5rem; }
         .icon-btn {
             display: inline-flex;
@@ -75,23 +71,6 @@
         .icon-btn .theme-icon { transition: transform .5s var(--ease), opacity .3s var(--ease); }
         .icon-btn:hover .theme-icon { transform: rotate(25deg); }
 
-        /* Bell dot (future unread indicator placeholder) */
-        .icon-btn .dot {
-            display: none;
-            position: absolute;
-            top: 6px; right: 6px;
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: #FF5A5F;
-            box-shadow: 0 0 0 2px rgba(255,255,255,.9);
-        }
-        .icon-btn .dot.show { display: block; animation: dotPulse 1.8s ease-in-out infinite; }
-        @@keyframes dotPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50%      { transform: scale(1.3); opacity: .6; }
-        }
-
-        /* ===== DARK MODE — layout-specific tweaks ===== */
         [data-theme="dark"] .icon-btn {
             background: rgba(255,255,255,.06);
             color: var(--ink);
@@ -102,16 +81,13 @@
             border-color: rgba(92,209,255,.35);
             box-shadow: 0 10px 26px -12px rgba(92,209,255,.7);
         }
-        [data-theme="dark"] .icon-btn .dot { box-shadow: 0 0 0 2px #0B1420; }
     </style>
 </head>
 <body>
     <div class="app-shell">
 
-        <!-- Sidebar backdrop (mobile) -->
         <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-        <!-- Sidebar -->
         <aside class="sidebar" id="appSidebar">
             <div class="brand-logo">
                 <span class="brand-mark" aria-hidden="true">
@@ -152,7 +128,6 @@
             </div>
         </aside>
 
-        <!-- Main column -->
         <div class="main-col">
             <header class="top-header">
                 <div class="d-flex align-items-center gap-2">
@@ -163,20 +138,18 @@
                 </div>
 
                 <div class="d-flex align-items-center header-actions">
-                    <!-- Night mode toggle -->
                     <button class="icon-btn" id="themeToggle" type="button"
                             aria-label="Toggle dark mode" title="Toggle dark mode">
                         <i class="bi bi-moon-stars theme-icon" id="themeIcon"></i>
                     </button>
 
-                    <!-- Bell (placeholder — click does nothing yet) -->
                     <button class="icon-btn" id="bellBtn" type="button"
+                            aria-expanded="false" aria-haspopup="true"
                             aria-label="Notifications" title="Notifications">
                         <i class="bi bi-bell"></i>
-                        <span class="dot" id="bellDot"></span>
+                        <span class="badge-count" id="bellDot" hidden>0</span>
                     </button>
 
-                    <!-- Profile -->
                     <div class="text-end d-none d-sm-block ms-1">
                         <div class="fw-semibold" style="font-size:.9rem;color:var(--ink);">
                             @User.FindFirst("FullName")?.Value
@@ -191,6 +164,36 @@
                 </div>
             </header>
 
+            <!-- Notification popover lives OUTSIDE .top-header so backdrop-filter can't clip it -->
+            <div class="notification-popover" id="notifPopover" hidden>
+                <div class="notification-menu" id="notifMenu" role="dialog" aria-label="Notifications">
+                    <div class="notif-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-bell-fill"></i>
+                            <strong>Notifications</strong>
+                            <span class="notif-unread-pill" id="notifUnreadPill" hidden>0 new</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none notif-mark-all" id="notifMarkAll">
+                            Mark all read
+                        </button>
+                    </div>
+
+                    <div class="notif-list" id="notifList" aria-live="polite">
+                        <div class="notif-empty">
+                            <i class="bi bi-bell-slash"></i>
+                            <span>You're all caught up</span>
+                        </div>
+                    </div>
+
+                    <div class="notif-footer">
+                        <span class="text-muted small" id="notifFooterText">No recent activity</span>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none" id="notifRefresh">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <main class="page-content">
                 @RenderBody()
             </main>
@@ -198,29 +201,24 @@
     </div>
 
     <script>
+    // =========================================================
+    // 1. Shell (sidebar + theme)
+    // =========================================================
     (function () {
         'use strict';
 
         function ready(fn) {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', fn);
-            } else {
-                fn();
-            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+            else fn();
         }
 
         ready(function () {
             var root = document.documentElement;
 
-            // ---------- Safe storage helpers ----------
-            function getStored(key) {
-                try { return localStorage.getItem(key); } catch (e) { return null; }
-            }
-            function setStored(key, val) {
-                try { localStorage.setItem(key, val); } catch (e) {}
-            }
+            function getStored(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+            function setStored(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-            // ---------- Mobile sidebar ----------
+            // Sidebar
             var menuBtn  = document.getElementById('mobileMenuBtn');
             var sidebar  = document.getElementById('appSidebar');
             var backdrop = document.getElementById('sidebarBackdrop');
@@ -232,8 +230,8 @@
             if (menuBtn) {
                 menuBtn.addEventListener('click', function (e) {
                     e.preventDefault();
-                    sidebar.classList.toggle('show');
-                    backdrop.classList.toggle('show');
+                    if (sidebar)  sidebar.classList.toggle('show');
+                    if (backdrop) backdrop.classList.toggle('show');
                 });
             }
             if (backdrop) backdrop.addEventListener('click', closeSidebar);
@@ -241,7 +239,7 @@
                 if (e.key === 'Escape') closeSidebar();
             });
 
-            // ---------- Theme toggle ----------
+            // Theme
             var toggle = document.getElementById('themeToggle');
             var icon   = document.getElementById('themeIcon');
             var meta   = document.getElementById('metaThemeColor');
@@ -262,20 +260,12 @@
                     toggle.setAttribute('aria-label',  isDark ? 'Switch to light mode' : 'Switch to dark mode');
                     toggle.setAttribute('title',       isDark ? 'Light mode' : 'Dark mode');
                 }
-                if (meta) {
-                    meta.setAttribute('content', isDark ? '#0B1420' : '#E6F8FF');
-                }
-                if (persist) {
-                    setStored('mv-theme', theme);
-                }
+                if (meta) meta.setAttribute('content', isDark ? '#0B1420' : '#E6F8FF');
+                if (persist) setStored('mv-theme', theme);
 
-                // Notify other listeners (e.g. charts that need to redraw)
-                try {
-                    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: theme } }));
-                } catch (e) {}
+                try { window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: theme } })); } catch (e) {}
             }
 
-            // Sync UI with whatever the head-bootstrap decided
             applyTheme(root.getAttribute('data-theme') || 'light', false);
 
             if (toggle) {
@@ -286,39 +276,240 @@
                 });
             }
 
-            // Follow system changes only if user hasn't explicitly chosen
             try {
                 var mq = window.matchMedia('(prefers-color-scheme: dark)');
                 var handler = function (e) {
-                    if (!getStored('mv-theme')) {
-                        applyTheme(e.matches ? 'dark' : 'light', false);
-                    }
+                    if (!getStored('mv-theme')) applyTheme(e.matches ? 'dark' : 'light', false);
                 };
                 if (mq.addEventListener) mq.addEventListener('change', handler);
                 else if (mq.addListener) mq.addListener(handler);
             } catch (e) {}
 
-            // ---------- Bell (placeholder) ----------
-            var bellBtn = document.getElementById('bellBtn');
-            if (bellBtn) {
-                bellBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    // TODO: open notifications panel
-                });
-            }
-            window.setBellUnread = function (on) {
-                var dot = document.getElementById('bellDot');
-                if (dot) dot.classList.toggle('show', !!on);
-            };
-
-            // Expose for debugging / other views
             window.mvTheme = {
                 set: applyTheme,
                 get: function () { return root.getAttribute('data-theme'); }
             };
         });
     })();
-</script>
+
+    // =========================================================
+    // 2. Notifications
+    // =========================================================
+    (function initNotifications() {
+        'use strict';
+
+        function ready(fn) {
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+            else fn();
+        }
+
+        ready(function () {
+            const bell     = document.getElementById('bellBtn');
+            const badge    = document.getElementById('bellDot');
+            const pill     = document.getElementById('notifUnreadPill');
+            const list     = document.getElementById('notifList');
+            const menu     = document.getElementById('notifMenu');
+            const popover  = document.getElementById('notifPopover');
+            const markAll  = document.getElementById('notifMarkAll');
+            const refresh  = document.getElementById('notifRefresh');
+            const footer   = document.getElementById('notifFooterText');
+
+            if (!bell || !menu || !list || !popover) {
+                console.warn('[notif] required DOM nodes missing');
+                return;
+            }
+
+            const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            let lastKnownId = 0;
+            let isOpen = false;
+
+            function setUnread(n) {
+                if (badge) {
+                    badge.textContent = n > 99 ? '99+' : String(n);
+                    badge.hidden = n === 0;
+                }
+                if (pill) {
+                    pill.textContent = n > 99 ? '99+ new' : `${n} new`;
+                    pill.hidden = n === 0;
+                }
+                if (markAll) markAll.disabled = n === 0;
+                menu.classList.toggle('has-unread', n > 0);
+            }
+
+            function iconFor(action) {
+                switch (action) {
+                    case 'Created':     return { cls: 'success', bi: 'bi-plus-lg' };
+                    case 'Updated':     return { cls: 'info',    bi: 'bi-pencil' };
+                    case 'Deleted':     return { cls: 'danger',  bi: 'bi-trash' };
+                    case 'BulkDeleted': return { cls: 'danger',  bi: 'bi-trash-fill' };
+                    case 'Imported':    return { cls: 'info',    bi: 'bi-upload' };
+                    case 'TagUpdated':  return { cls: 'warning', bi: 'bi-tags' };
+                    default:            return { cls: 'info',    bi: 'bi-dot' };
+                }
+            }
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function render(data) {
+                setUnread(data.unreadCount || 0);
+                if (data.items.length) lastKnownId = data.items[0].id;
+
+                if (!data.items.length) {
+                    list.innerHTML = `
+                        <div class="notif-empty">
+                            <i class="bi bi-bell-slash"></i>
+                            <span>You're all caught up</span>
+                        </div>`;
+                    if (footer) footer.textContent = 'No recent activity';
+                    return;
+                }
+
+                list.innerHTML = data.items.map(it => {
+                    const { cls, bi } = iconFor(it.action);
+                    const unread = it.id > (data.lastReadId || 0);
+                    const actionText = it.action.replace(/([A-Z])/g, ' $1').trim();
+                    return `
+                        <a class="notif-item ${unread ? 'is-unread' : ''}"
+                           href="${escapeHtml(it.url || '#')}"
+                           data-id="${it.id}">
+                            <span class="notif-ico ${cls}"><i class="bi ${bi}"></i></span>
+                            <div class="notif-body">
+                                <p class="notif-title">${escapeHtml(it.title)}</p>
+                                <p class="notif-detail">${escapeHtml(actionText)}${it.detail ? ' · ' + escapeHtml(it.detail) : ''}</p>
+                                <p class="notif-meta"><strong>${escapeHtml(it.actor)}</strong> · ${escapeHtml(it.age)}</p>
+                            </div>
+                        </a>`;
+                }).join('');
+
+                if (footer) {
+                    footer.textContent = `${data.items.length} recent event${data.items.length === 1 ? '' : 's'}`;
+                }
+            }
+
+            async function load(silent = false) {
+                try {
+                    const res = await fetch('/Notifications/Recent?take=15', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    render(data);
+                } catch (_) {
+                    if (!silent) {
+                        list.innerHTML = '<div class="notif-empty">Could not load notifications</div>';
+                    }
+                }
+            }
+
+            function positionPopover() {
+                const rect = bell.getBoundingClientRect();
+                popover.style.top   = (rect.bottom + 8) + 'px';
+                popover.style.right = (window.innerWidth - rect.right) + 'px';
+                popover.style.left  = 'auto';
+            }
+
+            function openMenu() {
+                isOpen = true;
+                bell.setAttribute('aria-expanded', 'true');
+                positionPopover();
+                popover.hidden = false;
+                requestAnimationFrame(() => popover.classList.add('show'));
+            }
+
+            function closeMenu() {
+                isOpen = false;
+                bell.setAttribute('aria-expanded', 'false');
+                popover.classList.remove('show');
+                setTimeout(() => { popover.hidden = true; }, 200);
+            }
+
+            bell.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isOpen) { closeMenu(); return; }
+                openMenu();
+                load();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!isOpen) return;
+                if (popover.contains(e.target) || bell.contains(e.target)) return;
+                closeMenu();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && isOpen) closeMenu();
+            });
+
+            list.addEventListener('click', (e) => {
+                const item = e.target.closest('.notif-item');
+                if (!item) return;
+                markAll?.click();
+                closeMenu();
+            });
+
+            window.addEventListener('resize', () => {
+                if (isOpen) positionPopover();
+            });
+
+            markAll?.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await fetch('/Notifications/MarkAllRead', {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': csrf,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    if (!res.ok) return;
+                    list.querySelectorAll('.notif-item.is-unread').forEach(el => el.classList.remove('is-unread'));
+                    setUnread(0);
+                } catch (_) {}
+            });
+
+            refresh?.addEventListener('click', (e) => {
+                e.preventDefault();
+                load();
+            });
+
+            // Initial load
+            load();
+
+            // Poll every 30 s
+            setInterval(async () => {
+                if (document.hidden) return;
+                try {
+                    const res = await fetch(`/Notifications/Poll?since=${lastKnownId}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data.hasNew) {
+                        bell.classList.add('vibrate');
+                        setTimeout(() => bell.classList.remove('vibrate'), 1000);
+                        await load(true);
+                        const res2 = await fetch('/Notifications/Recent?take=1');
+                        if (res2.ok) {
+                            const d2 = await res2.json();
+                            setUnread(d2.unreadCount || 0);
+                        }
+                    }
+                } catch (_) {}
+            }, 30000);
+
+            window.setBellUnread = function (on) {
+                setUnread(typeof on === 'number' ? on : (on ? 1 : 0));
+            };
+        });
+    })();
+    </script>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)

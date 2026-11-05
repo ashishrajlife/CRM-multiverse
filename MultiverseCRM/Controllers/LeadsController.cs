@@ -12,11 +12,13 @@ namespace MultiverseCRM.Controllers;
 public class LeadsController : Controller
 {
     private readonly AppDbContext _context;
-private readonly ILeadImportExportService _importExport;
-    public LeadsController(AppDbContext context, ILeadImportExportService importExport)
+    private readonly ILeadImportExportService _importExport;
+    private readonly IActivityLogger _activity;
+    public LeadsController(AppDbContext context, ILeadImportExportService importExport,IActivityLogger activity)
     {
         _context = context;
         _importExport = importExport;
+        _activity = activity;
     }
 
     private IQueryable<Lead> BuildFilteredQuery(
@@ -132,7 +134,14 @@ var statusCounts = await _context.Leads.GroupBy(l => l.Status)
             lead.UpdatedAt = DateTime.UtcNow;
             _context.Leads.Add(lead);
             await _context.SaveChangesAsync();
-            TempData["Success"] = "Lead created successfully!";
+            await _activity.LogAsync(
+            entity: "Lead",
+            action: "Created",
+            title: lead.FullName,
+            detail: $"Phone: {lead.Phone} · Status: {lead.Status ?? "-"}",
+            url: Url.Action("Index", "Leads"),
+            entityId: lead.Id);
+              TempData["Success"] = "Lead created successfully!";
         }
         else
         {
@@ -188,6 +197,13 @@ existing.AltPhone = string.IsNullOrWhiteSpace(lead.AltPhone) ? null : CleanPhone
             existing.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await _activity.LogAsync(
+            entity: "Lead",
+            action: "Updated",
+            title: existing.FullName,
+            detail: $"Status: {existing.Status ?? "-"}",
+            url: Url.Action("Index", "Leads"),
+            entityId: existing.Id);
             TempData["Success"] = "Lead updated successfully!";
         }
         else
@@ -206,6 +222,12 @@ existing.AltPhone = string.IsNullOrWhiteSpace(lead.AltPhone) ? null : CleanPhone
         {
             _context.Leads.Remove(lead);
             await _context.SaveChangesAsync();
+            await _activity.LogAsync(
+            entity: "Lead",
+            action: "Deleted",
+            title: lead.FullName,
+            detail: $"Phone: {lead.Phone}",
+            entityId: lead.Id);
             TempData["Success"] = "Lead deleted successfully!";
         }
         return RedirectToAction(nameof(Index));
@@ -238,8 +260,16 @@ public async Task<IActionResult> UpdateTags([FromBody] UpdateTagsRequest req)
     lead.Tags = req.Tags;
     lead.UpdatedAt = DateTime.UtcNow;
     await _context.SaveChangesAsync();
+    await _context.SaveChangesAsync();
+    await _activity.LogAsync(
+        entity: "Lead",
+        action: "TagUpdated",
+        title: lead.FullName,
+        detail: $"Tags: {lead.Tags ?? "(none)"}",
+        entityId: lead.Id);
     return Json(new { success = true });
 }
+
 [HttpPost]
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> DeleteMany(string ids)
@@ -251,11 +281,19 @@ public async Task<IActionResult> DeleteMany(string ids)
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(int.Parse)
         .ToList();
-
     var leads = await _context.Leads.Where(l => idList.Contains(l.Id)).ToListAsync();
     _context.Leads.RemoveRange(leads);
-    await _context.SaveChangesAsync();
+    await _context.SaveChangesAsync();          // ← moved up
 
+    await _activity.LogAsync(
+        entity: "Lead",
+        action: "BulkDeleted",
+        title: $"{leads.Count} lead(s) deleted",
+        detail: leads.Count <= 3
+            ? string.Join(", ", leads.Select(l => l.FullName))
+            : $"{leads[0].FullName} and {leads.Count - 1} more");
+    await _context.SaveChangesAsync();
+    
     TempData["Success"] = $"{leads.Count} lead(s) deleted.";
     return RedirectToAction(nameof(Index));
 }
@@ -326,9 +364,20 @@ public async Task<IActionResult> Import(IFormFile file)
         vm.Rows.Add(res);
     }
 
-    await _context.SaveChangesAsync();
-    return Json(vm);
-}
+        await _context.SaveChangesAsync();
 
+    if (vm.InsertedCount > 0)
+    {
+        await _activity.LogAsync(
+            entity: "Lead",
+            action: "Imported",
+            title: $"{vm.InsertedCount} lead(s) imported",
+            detail: $"{vm.SkippedCount} skipped · {vm.ErrorCount} errors",
+            url: Url.Action("Index", "Leads"));
+    }
+
+    return Json(vm);
+
+ }
 
 }

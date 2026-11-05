@@ -237,4 +237,4 @@ E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ExcelNumberFormat.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\RBush.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\SixLabors.Fonts.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.IO.Packaging.dll
-E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-j65yq6o1g7-j65yq6o1g7.gz
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-tizce23bwg-tizce23bwg.gz
