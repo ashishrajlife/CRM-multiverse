@@ -322,10 +322,9 @@ if (idList.Count == 0) return RedirectToAction(nameof(Index));
     return RedirectToAction(nameof(Index));
 }
 [HttpGet]
-public IActionResult Export(string? status, string? search, string? sortBy, string? sortOrder)
+public async Task<IActionResult> Export(string? status, string? search, string? sortBy, string? sortOrder)
 {
-    // Reuse whatever your Index does to load Model.Leads — ideally factor the query into a private helper.
-    var leads = BuildFilteredQuery(status, search, sortBy, sortOrder).ToList();  // <-- your existing filter logic
+    var leads = await BuildFilteredQuery(status, search, sortBy, sortOrder).ToListAsync();
     var bytes = _importExport.Export(leads);
     var fileName = $"leads_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
     return File(bytes,

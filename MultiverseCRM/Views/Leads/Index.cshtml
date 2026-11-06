@@ -115,6 +115,7 @@
 .imp-table thead th { position: sticky; top: 0; z-index: 1; background: var(--glass-strong); font-size: .78rem; }
 .imp-table td, .imp-table th { vertical-align: top; }
 @@media (max-width: 575.98px) { .imp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.btn-export { min-width: 7.8rem; display: inline-flex; align-items: center; justify-content: center; }
 </style>
 
 <!-- Toolbar -->
@@ -124,14 +125,17 @@
             <i class="bi bi-plus-lg me-1"></i> Add Lead
         </button>
         <!-- Export -->
-        <a class="btn btn-outline-secondary btn-sm px-3"
-        asp-action="Export"
-        asp-route-status="@Model.ActiveStatus"
-        asp-route-search="@Model.SearchTerm"
-        asp-route-sortBy="@Model.SortBy"
-        asp-route-sortOrder="@Model.SortOrder">
-            <i class="bi bi-download me-1"></i> Export
-        </a>
+            <a id="exportBtn" class="btn btn-outline-secondary btn-sm px-3 btn-export"
+            asp-action="Export"
+            asp-route-status="@Model.ActiveStatus"
+            asp-route-search="@Model.SearchTerm"
+            asp-route-sortBy="@Model.SortBy"
+            asp-route-sortOrder="@Model.SortOrder">
+                <span class="label"><i class="bi bi-download me-1"></i> Export</span>
+                <span class="busy d-none">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting…
+                </span>
+            </a>
 
         <!-- Import -->
         <button class="btn btn-outline-secondary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#importLeadModal">
@@ -681,5 +685,39 @@
             m.addEventListener('change', e => { if (e.target.matches('select[name="AreaUnit"]')) syncAreaUnit(m); });
             m.addEventListener('shown.bs.modal', () => syncAreaUnit(m));
         });
+        // ===== Export with spinner =====
+const exportBtn = document.getElementById('exportBtn');
+function setExportBusy(on) {
+    exportBtn.classList.toggle('disabled', on);
+    exportBtn.setAttribute('aria-busy', on);
+    exportBtn.querySelector('.label').classList.toggle('d-none', on);
+    exportBtn.querySelector('.busy').classList.toggle('d-none', !on);
+}
+exportBtn?.addEventListener('click', async e => {
+    e.preventDefault();
+    if (exportBtn.classList.contains('disabled')) return;
+    setExportBusy(true);
+    try {
+        const res = await fetch(exportBtn.href, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Server returned ' + res.status);
+        if ((res.headers.get('Content-Type') || '').includes('text/html'))
+            throw new Error('Session expired. Please sign in again.');
+
+        const blob = await res.blob();
+        const cd = res.headers.get('Content-Disposition') || '';
+        const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+        const name = m ? decodeURIComponent(m[1]) : 'leads.xlsx';
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+        alert('Export failed: ' + err.message);
+    } finally {
+        setExportBusy(false);
+    }
+});
     </script>
 }
