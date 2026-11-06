@@ -24,6 +24,11 @@
         ["page"] = p.ToString()
     };
 
+    string AreaText(MultiverseCRM.Models.Lead l) =>
+    l.AreaSqft.HasValue
+        ? l.AreaSqft.Value.ToString("N0") + " " + (string.IsNullOrWhiteSpace(l.AreaUnit) ? "sqft" : l.AreaUnit)
+        : "—";
+
     string LeadJson(MultiverseCRM.Models.Lead l) => System.Text.Json.JsonSerializer.Serialize(l);
 
     string SortIcon(string col) {
@@ -88,6 +93,28 @@
     [data-theme="dark"] .modal-icon-aqua   { background: rgba(111,216,255,.20); color: var(--aqua); }
     [data-theme="dark"] .modal-icon-danger { background: rgba(248,113,113,.20); color: #FCA5A5; }
     [data-theme="dark"] .modal-icon-warning{ background: rgba(251,191,36,.20); color: #FDE68A; }
+    /* ===== Import result ===== */
+.imp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.1rem; }
+.imp-stat { padding: .8rem .95rem; border-radius: .9rem; border: 1px solid var(--glass-line); background: var(--glass); }
+.imp-stat .n { font-size: 1.6rem; font-weight: 800; line-height: 1.1; letter-spacing: -.03em; }
+.imp-stat .l { font-size: .75rem; font-weight: 600; color: var(--ink-soft); }
+.imp-stat.ok .n   { color: #16a34a; }
+.imp-stat.skip .n { color: #d97706; }
+.imp-stat.err .n  { color: #dc2626; }
+[data-theme="dark"] .imp-stat.ok .n   { color: #34D399; }
+[data-theme="dark"] .imp-stat.skip .n { color: #FBBF24; }
+[data-theme="dark"] .imp-stat.err .n  { color: #FCA5A5; }
+
+.imp-icon.ok   { background: rgba(52,211,153,.18);  color: #16a34a; }
+.imp-icon.warn { background: rgba(251,191,36,.20);  color: #B45309; }
+.imp-icon.fail { background: rgba(248,113,113,.18); color: #DC2626; }
+[data-theme="dark"] .imp-icon.ok   { color: #34D399; }
+[data-theme="dark"] .imp-icon.warn { color: #FDE68A; }
+[data-theme="dark"] .imp-icon.fail { color: #FCA5A5; }
+
+.imp-table thead th { position: sticky; top: 0; z-index: 1; background: var(--glass-strong); font-size: .78rem; }
+.imp-table td, .imp-table th { vertical-align: top; }
+@@media (max-width: 575.98px) { .imp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 
 <!-- Toolbar -->
@@ -109,8 +136,7 @@
         <!-- Import -->
         <button class="btn btn-outline-secondary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#importLeadModal">
             <i class="bi bi-upload me-1"></i> Import
-        </button>
-        <button class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-clock-history me-1"></i> History</button>
+        </button>  
     </div>
 
     <form method="get" class="d-flex gap-2" style="max-width: 350px; width: 100%;">
@@ -279,7 +305,7 @@
                         <td>@(lead.BHK ?? "-")</td>
                         <td>@(lead.Location ?? "-")</td>
                         <td class="fw-medium">@(lead.Price != null ? Format.Money(lead.Price, app.CurrencySymbol) : Format.Range(lead.MinPrice, lead.MaxPrice, app.CurrencySymbol))</td>
-                        <td>@(lead.AreaSqft?.ToString("N0") ?? "—") sqft</td>
+                        <td>@AreaText(lead)</td>
                         <td><span class="pill" style="--pill:@statusColor.GetValueOrDefault(lead.Status, "#64748b")">@lead.Status</span></td>
 
                         <td class="sticky-col-right text-center">
@@ -360,26 +386,45 @@
 <div class="modal fade" id="importResultModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius:14px;">
-            <div class="modal-header border-bottom bg-light">
-                <h6 class="mb-0 fw-bold">Import Result</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded p-2 imp-icon ok" id="impIcon"><i class="bi bi-check-circle-fill"></i></div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" id="impTitle">Import complete</h6>
+                        <small class="text-muted" id="impSub" style="font-size:.75rem;"></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body p-4">
-                <div id="importSummary" class="mb-3"></div>
-                <div class="table-responsive" style="max-height:400px;">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>Row</th><th>Name</th><th>Phone</th><th>Status</th><th>Message</th>
-                            </tr>
-                        </thead>
-                        <tbody id="importResultBody"></tbody>
-                    </table>
+                <div class="imp-stats">
+                    <div class="imp-stat"><div class="n" id="impTotal">0</div><div class="l">Rows in file</div></div>
+                    <div class="imp-stat ok"><div class="n" id="impOk">0</div><div class="l">Imported</div></div>
+                    <div class="imp-stat skip"><div class="n" id="impSkip">0</div><div class="l">Duplicates skipped</div></div>
+                    <div class="imp-stat err"><div class="n" id="impErr">0</div><div class="l">Failed</div></div>
+                </div>
+
+                <div id="impIssues" class="d-none">
+                    <h6 class="fw-bold mb-2">Rows that were not imported</h6>
+                    <div class="table-responsive" style="max-height:320px;">
+                        <table class="table table-sm align-middle imp-table mb-0">
+                            <thead>
+                                <tr><th style="width:4rem;">Row</th><th>Name</th><th>Phone</th><th>Result</th><th>Reason</th></tr>
+                            </thead>
+                            <tbody id="impRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="form-text" id="impMore"></div>
+                </div>
+
+                <div id="impAllGood" class="d-none text-center text-muted py-2">
+                    <i class="bi bi-stars me-1"></i> Every row was imported. Nothing needs your attention.
                 </div>
             </div>
-            <div class="modal-footer border-top bg-light">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal"
-                        onclick="location.reload()">Done</button>
+
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Done</button>
             </div>
         </div>
     </div>
@@ -397,12 +442,14 @@
     <script>
         const existingTags = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllTags));
         const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
         const tagCfg = () => ({
             plugins: ['remove_button'], create: true, createOnBlur: true, persist: false, delimiter: ',',
             options: existingTags.map(t => ({ value: t, text: t }))
         });
 
-        // Inline tag editors
+        // ===== Inline tag editors =====
         document.querySelectorAll('.tag-selector').forEach(el => {
             new TomSelect(el, {
                 ...tagCfg(),
@@ -426,12 +473,10 @@
         const bulkCount = document.getElementById('bulkCount');
 
         function refreshBulkUI() {
-            const checked = rowChecks().filter(c => c.checked);
-            const n = checked.length;
+            const n = rowChecks().filter(c => c.checked).length;
+            const all = rowChecks();
             bulkBar.classList.toggle('show', n > 0);
             bulkCount.textContent = n + ' selected';
-            // sync header checkbox
-            const all = rowChecks();
             selectAll.checked = all.length > 0 && n === all.length;
             selectAll.indeterminate = n > 0 && n < all.length;
         }
@@ -497,112 +542,144 @@
         });
 
         // ===== Import =====
-const importForm = document.getElementById('importForm');
-const importBtn  = document.getElementById('importBtn');
-const importErr  = document.getElementById('importError');
+        const importForm = document.getElementById('importForm');
+        const importBtn  = document.getElementById('importBtn');
+        const importErr  = document.getElementById('importError');
+        let importedSomething = false;
 
-function setBusy(on) {
-    importBtn.disabled = on;
-    importBtn.querySelector('.label').classList.toggle('d-none', on);
-    importBtn.querySelector('.spinner-border').classList.toggle('d-none', !on);
-}
-
-importForm?.addEventListener('submit', async e => {
-    e.preventDefault();
-    importErr.classList.add('d-none');
-
-    const file = document.getElementById('importFile').files[0];
-    if (!file) { importErr.textContent = 'Please choose a file.'; importErr.classList.remove('d-none'); return; }
-
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('__RequestVerificationToken', csrf);
-
-    setBusy(true);
-    try {
-        const res  = await fetch('@Url.Action("Import", "Leads")', { method: 'POST', body: fd });
-        const text = await res.text();
-        if (!res.ok) {
-            importErr.textContent = text || 'Import failed.';
-            importErr.classList.remove('d-none');
-            setBusy(false);
-            return;
-        }
-        const data = JSON.parse(text);
-
-        // Summary
-        document.getElementById('importSummary').innerHTML = `
-            <div class="d-flex gap-3 flex-wrap">
-                <span class="badge text-bg-secondary">Total: ${data.totalRows}</span>
-                <span class="badge text-bg-success">Inserted: ${data.insertedCount}</span>
-                <span class="badge text-bg-warning">Skipped: ${data.skippedCount}</span>
-                <span class="badge text-bg-danger">Errors: ${data.errorCount}</span>
-            </div>`;
-
-        // Rows
-        const tbody = document.getElementById('importResultBody');
-        tbody.innerHTML = data.rows.map(r => {
-            const cls = r.status === 'Inserted' ? 'success'
-                      : r.status.startsWith('Skipped') ? 'warning' : 'danger';
-            return `<tr>
-                <td>${r.rowNumber}</td>
-                <td>${r.fullName ?? ''}</td>
-                <td>${r.phone ?? ''}</td>
-                <td><span class="badge text-bg-${cls}">${r.status}</span></td>
-                <td class="small text-muted">${r.message ?? ''}</td>
-            </tr>`;
-        }).join('');
-
-        // Close import, open result
-        bootstrap.Modal.getInstance(document.getElementById('importLeadModal')).hide();
-        new bootstrap.Modal(document.getElementById('importResultModal')).show();
-    } catch (ex) {
-        importErr.textContent = 'Upload failed: ' + ex.message;
-        importErr.classList.remove('d-none');
-    } finally {
-        setBusy(false);
-    }
-});
-
-// ---- Copy phone number ----
-document.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.copy-phone');
-    if (!btn) return;
-    e.preventDefault();
-
-    const phone = btn.dataset.phone || '';
-    if (!phone) return;
-
-    try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(phone);
-        } else {
-            // Fallback for http:// or older browsers
-            const ta = document.createElement('textarea');
-            ta.value = phone;
-            ta.setAttribute('readonly', '');
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
+        function setBusy(on) {
+            importBtn.disabled = on;
+            importBtn.querySelector('.label').classList.toggle('d-none', on);
+            importBtn.querySelector('.spinner-border').classList.toggle('d-none', !on);
         }
 
-        // Swap icon → check for 1.2s
-        const icon = btn.querySelector('i');
-        if (icon) {
-            const prev = icon.className;
-            icon.className = 'bi bi-check2';
-            btn.classList.add('is-copied');
-            setTimeout(() => {
-                icon.className = prev;
-                btn.classList.remove('is-copied');
-            }, 1200);
+        function renderImportResult(d) {
+            const total = d.totalRows ?? 0, ok = d.insertedCount ?? 0,
+                  skip = d.skippedCount ?? 0, err = d.errorCount ?? 0;
+            importedSomething = ok > 0;
+            const set = (id, v) => document.getElementById(id).textContent = v;
+            set('impTotal', total); set('impOk', ok); set('impSkip', skip); set('impErr', err);
+
+            let state, title, sub;
+            if (total > 0 && ok === total) { state = 'ok';   title = 'Import successful';            sub = `All ${total} leads were imported.`; }
+            else if (ok > 0)               { state = 'warn'; title = 'Import completed with issues'; sub = `${ok} of ${total} leads imported. ${total - ok} need attention.`; }
+            else                           { state = 'fail'; title = 'No leads were imported';       sub = total ? 'Fix the issues below and upload again.' : 'The file had no data rows.'; }
+
+            const icon = document.getElementById('impIcon');
+            icon.className = `rounded p-2 imp-icon ${state}`;
+            icon.innerHTML = `<i class="bi ${state === 'ok' ? 'bi-check-circle-fill' : state === 'warn' ? 'bi-exclamation-triangle-fill' : 'bi-x-circle-fill'}"></i>`;
+            set('impTitle', title); set('impSub', sub);
+
+            const problems = (d.rows || []).filter(r => r.status !== 'Inserted');
+            const LIMIT = 200;
+            document.getElementById('impIssues').classList.toggle('d-none', problems.length === 0);
+            document.getElementById('impAllGood').classList.toggle('d-none', problems.length !== 0 || total === 0);
+
+            document.getElementById('impRows').innerHTML = problems.slice(0, LIMIT).map(r => {
+                const dup = String(r.status).startsWith('Skipped');
+                const reasons = String(r.message ?? '').split(';').map(s => s.trim()).filter(Boolean)
+                                  .map(s => `<div>${esc(s)}</div>`).join('') || '<div>—</div>';
+                return `<tr>
+                    <td class="text-muted">${esc(r.rowNumber)}</td>
+                    <td class="fw-medium">${esc(r.fullName) || '—'}</td>
+                    <td>${esc(r.phone) || '—'}</td>
+                    <td><span class="badge text-bg-${dup ? 'warning' : 'danger'}">${dup ? 'Duplicate' : 'Error'}</span></td>
+                    <td class="small">${reasons}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('impMore').textContent =
+                problems.length > LIMIT ? `Showing the first ${LIMIT} of ${problems.length} rows.` : '';
         }
-    } catch (err) {
-        console.warn('Copy failed:', err);
-    }
-});
+
+        // Refresh the list after the result popup closes, only if something was imported
+        document.getElementById('importResultModal')?.addEventListener('hidden.bs.modal', () => {
+            if (importedSomething) location.reload();
+        });
+
+        importForm?.addEventListener('submit', async e => {
+            e.preventDefault();
+            importErr.classList.add('d-none');
+
+            const file = document.getElementById('importFile').files[0];
+            if (!file) { importErr.textContent = 'Please choose a file.'; importErr.classList.remove('d-none'); return; }
+
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('__RequestVerificationToken', csrf);
+
+            setBusy(true);
+            try {
+                const res  = await fetch('@Url.Action("Import", "Leads")', { method: 'POST', body: fd });
+                const text = await res.text();
+                if (!res.ok) {
+                    importErr.textContent = text || 'Import failed.';
+                    importErr.classList.remove('d-none');
+                    return;
+                }
+
+                renderImportResult(JSON.parse(text));
+
+                bootstrap.Modal.getInstance(document.getElementById('importLeadModal'))?.hide();
+                new bootstrap.Modal(document.getElementById('importResultModal')).show();
+            } catch (ex) {
+                importErr.textContent = 'Upload failed: ' + ex.message;
+                importErr.classList.remove('d-none');
+            } finally {
+                setBusy(false);
+            }
+        });
+
+        // ===== Copy phone number =====
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.copy-phone');
+            if (!btn) return;
+            e.preventDefault();
+
+            const phone = btn.dataset.phone || '';
+            if (!phone) return;
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(phone);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = phone;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    const prev = icon.className;
+                    icon.className = 'bi bi-check2';
+                    btn.classList.add('is-copied');
+                    setTimeout(() => {
+                        icon.className = prev;
+                        btn.classList.remove('is-copied');
+                    }, 1200);
+                }
+            } catch (err) {
+                console.warn('Copy failed:', err);
+            }
+        });
+
+        // ===== Area unit label follows the "Area Unit" dropdown =====
+        function syncAreaUnit(modal) {
+            const unit = (modal.querySelector('select[name="AreaUnit"]')?.value || '').trim();
+            modal.querySelectorAll('.area-unit-label').forEach(el => el.textContent = unit ? `(${unit})` : '');
+            const area = modal.querySelector('input[name="AreaSqft"]');
+            if (area) area.placeholder = unit ? `e.g. 1200 ${unit}` : 'e.g. 1200';
+        }
+        ['addLeadModal', 'editLeadModal'].forEach(id => {
+            const m = document.getElementById(id);
+            if (!m) return;
+            m.addEventListener('change', e => { if (e.target.matches('select[name="AreaUnit"]')) syncAreaUnit(m); });
+            m.addEventListener('shown.bs.modal', () => syncAreaUnit(m));
+        });
     </script>
 }

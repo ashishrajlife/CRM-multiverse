@@ -128,6 +128,15 @@ var statusCounts = await _context.Leads.GroupBy(l => l.Status)
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Lead lead)
     {
+        lead.Id = 0;                                   // never trust an Id from the form
+        lead.Phone = CleanPhone(lead.Phone);           // same cleaning as Edit / Import
+        lead.AltPhone = string.IsNullOrWhiteSpace(lead.AltPhone) ? null : CleanPhone(lead.AltPhone);
+
+        if (lead.Phone.Length != 10)
+            ModelState.AddModelError(nameof(lead.Phone), "Enter a valid 10-digit phone number.");
+        else if (await _context.Leads.AnyAsync(l => l.Phone == lead.Phone))
+            ModelState.AddModelError(nameof(lead.Phone), "A lead with this phone already exists.");
+
         if (ModelState.IsValid)
         {
             lead.CreatedAt = DateTime.UtcNow;
@@ -135,20 +144,19 @@ var statusCounts = await _context.Leads.GroupBy(l => l.Status)
             _context.Leads.Add(lead);
             await _context.SaveChangesAsync();
             await _activity.LogAsync(
-            entity: "Lead",
-            action: "Created",
-            title: lead.FullName,
-            detail: $"Phone: {lead.Phone} · Status: {lead.Status ?? "-"}",
-            url: Url.Action("Index", "Leads"),
-            entityId: lead.Id);
-              TempData["Success"] = "Lead created successfully!";
+                entity: "Lead", action: "Created", title: lead.FullName,
+                detail: $"Phone: {lead.Phone} · Status: {lead.Status ?? "-"}",
+                url: Url.Action("Index", "Leads"), entityId: lead.Id);
+            TempData["Success"] = "Lead created successfully!";
         }
         else
         {
-            TempData["Error"] = "Please fill all required fields correctly.";
+            TempData["Error"] = ModelState.Values.SelectMany(v => v.Errors)
+                                    .Select(e => e.ErrorMessage).FirstOrDefault(m => !string.IsNullOrEmpty(m))
+                                ?? "Please fill all required fields correctly.";
         }
-        return RedirectToAction(nameof(Index));
-    }
+            return RedirectToAction(nameof(Index));
+        }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -162,10 +170,23 @@ var statusCounts = await _context.Leads.GroupBy(l => l.Status)
                 TempData["Error"] = "Lead not found.";
                 return RedirectToAction(nameof(Index));
             }
-
+            var phone = CleanPhone(lead.Phone);
+            if (phone != CleanPhone(existing.Phone))      // only validate when the phone was actually changed
+            {
+                if (phone.Length != 10)
+                {
+                    TempData["Error"] = "Enter a valid 10-digit phone number.";
+                    return RedirectToAction(nameof(Index));
+                }
+                if (await _context.Leads.AnyAsync(l => l.Phone == phone && l.Id != lead.Id))
+                {
+                    TempData["Error"] = "Another lead already uses this phone number.";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
             existing.FullName = lead.FullName;
-         existing.Phone = CleanPhone(lead.Phone);
-existing.AltPhone = string.IsNullOrWhiteSpace(lead.AltPhone) ? null : CleanPhone(lead.AltPhone);
+      existing.Phone = phone;
+          existing.AltPhone = string.IsNullOrWhiteSpace(lead.AltPhone) ? null : CleanPhone(lead.AltPhone);
             existing.Email = lead.Email;
             existing.Priority = lead.Priority;
             existing.Status = lead.Status;
@@ -255,6 +276,8 @@ public record UpdateTagsRequest(int Id, string? Tags);
 [ValidateAntiForgeryToken]
 public async Task<IActionResult> UpdateTags([FromBody] UpdateTagsRequest req)
 {
+    if (req == null) return BadRequest();
+    
     var lead = await _context.Leads.FindAsync(req.Id);
     if (lead == null) return NotFound();
     lead.Tags = req.Tags;
@@ -278,9 +301,10 @@ public async Task<IActionResult> DeleteMany(string ids)
         return RedirectToAction(nameof(Index));
 
     var idList = ids
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-        .Select(int.Parse)
-        .ToList();
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Select(s => int.TryParse(s, out var n) ? n : (int?)null)
+    .Where(n => n.HasValue).Select(n => n!.Value).Distinct().ToList();
+if (idList.Count == 0) return RedirectToAction(nameof(Index));
     var leads = await _context.Leads.Where(l => idList.Contains(l.Id)).ToListAsync();
     _context.Leads.RemoveRange(leads);
     await _context.SaveChangesAsync();          // ← moved up
@@ -324,10 +348,11 @@ public async Task<IActionResult> Import(IFormFile file)
         return BadRequest(string.Join(" | ", parsed.FileErrors));
 
     // Insert valid rows; skip duplicates by Phone (existing in DB OR seen earlier in this file)
-    var existingPhones = await _context.Leads
-        .Where(l => parsed.Rows.Select(r => r.Lead.Phone).Contains(l.Phone))
-        .Select(l => l.Phone)
-        .ToListAsync();
+    var phones = parsed.Rows.Select(r => r.Lead.Phone).Where(p => !string.IsNullOrEmpty(p)).Distinct().ToList();
+var existingPhones = await _context.Leads
+    .Where(l => phones.Contains(l.Phone))
+    .Select(l => l.Phone)
+    .ToListAsync();
     var seen = new HashSet<string>(existingPhones);
 
     var vm = new LeadImportResultViewModel { TotalRows = parsed.Rows.Count };

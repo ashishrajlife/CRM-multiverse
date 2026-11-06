@@ -88,12 +88,19 @@
             <div class="lv-copy">
                 <h2 class="lv-title">Close more deals, with less busywork.</h2>
                 <p class="lv-sub">Leads, site visits, and follow-ups in one calm workspace — built for teams that move fast.</p>
+                <ul class="lv-chips" aria-hidden="true">
+                    <li><i class="bi bi-funnel"></i> Leads</li>
+                    <li><i class="bi bi-geo-alt"></i> Site visits</li>
+                    <li><i class="bi bi-briefcase"></i> Deals</li>
+                    <li><i class="bi bi-whatsapp"></i> Follow-ups</li>
+                </ul>
             </div>
         </aside>
 
         <!-- ============ RIGHT: sign-in panel ============ -->
         <section class="login-panel">
             <form class="login-card" id="loginCard" method="post" novalidate aria-labelledby="loginTitle">
+                <span class="login-eyebrow"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> Secure sign in</span>
                 <h1 class="login-title" id="loginTitle">Welcome back</h1>
                 <p class="login-sub">Sign in to manage leads, site visits and deals.</p>
 
@@ -114,10 +121,13 @@
                             <i class="bi bi-eye"></i>
                         </button>
                     </div>
+                    <div class="caps-hint d-none" id="capsHint" role="status">
+                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> Caps Lock is on
+                    </div>
                 </div>
 
                 <button id="loginBtn" type="submit" class="btn login-btn w-100">
-                    <span class="label">Sign in</span>
+                    <span class="label">Sign in <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></span>
                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                 </button>
             </form>
@@ -134,6 +144,7 @@
                   btn  = document.getElementById('loginBtn'),
                   pw   = document.getElementById('pw'),
                   toggle = document.getElementById('pwToggle'),
+                  caps = document.getElementById('capsHint'),
                   stack = document.getElementById('toastStack');
 
             function toast(msg, type) {
@@ -152,6 +163,15 @@
                 btn.querySelector('.label').classList.toggle('d-none', on);
                 btn.querySelector('.spinner-border').classList.toggle('d-none', !on);
             }
+
+            // Caps Lock hint (UI only)
+            const capsCheck = (e) => {
+                const on = e.getModifierState && e.getModifierState('CapsLock');
+                caps.classList.toggle('d-none', !on);
+            };
+            pw.addEventListener('keydown', capsCheck);
+            pw.addEventListener('keyup', capsCheck);
+            pw.addEventListener('blur', () => caps.classList.add('d-none'));
 
             toggle.addEventListener('click', () => {
                 const show = pw.type === 'password';
