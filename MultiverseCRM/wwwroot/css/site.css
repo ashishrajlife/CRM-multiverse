@@ -497,8 +497,8 @@ a { text-underline-offset: 3px; }
     border-radius: var(--radius);
     box-shadow: var(--shadow-glass);
     overflow: hidden;
-    height: calc(100dvh - 18.1rem);
-    min-height: 25rem;
+   height: calc(100dvh - 13rem);
+    min-height: 32rem; 
 }
 .table-scroll-area {
     overflow: auto;
@@ -757,7 +757,7 @@ a { text-underline-offset: 3px; }
 
 @media (max-width: 767.98px) {
     .p-4 { padding: 1rem !important; }
-    .table-container { height: calc(100dvh - 16.5rem); }
+    .table-container { height: calc(100dvh - 12rem); }
     .form-control, .form-select { font-size: 16px; }
 }
 

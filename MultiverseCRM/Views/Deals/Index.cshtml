@@ -149,11 +149,13 @@
     }
     /* ---- Scroll-locked table ---- */
     .deals-table-wrap {
-        height: calc(100dvh - 22rem);
-        min-height: 24rem;
+        height: auto;
+        min-height: 0;
     }
     .deals-table-wrap .table-container {
         margin: 0;
+        height: calc(100dvh - 15rem); 
+        min-height: 32rem;
     }
 
     /* ---- Centre every cell (th + td) ---- */
@@ -189,10 +191,10 @@
         white-space: nowrap;
     }
 
-    @@media (max-width: 767.98px) {
-        .deals-table-wrap { height: calc(100dvh - 20rem); min-height: 22rem; }
-        .deals-filters .action-group { margin-left: 0; width: 100%; justify-content: flex-end; }
-    }
+   @@media (max-width: 767.98px) {
+    .deals-table-wrap .table-container { height: calc(100dvh - 14rem); min-height: 26rem; }
+    .deals-filters .action-group { margin-left: 0; width: 100%; justify-content: flex-end; }
+}
 </style>
 
 <!-- KPI strip -->
