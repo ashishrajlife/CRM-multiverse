@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
     public DbSet<ActivityRead> ActivityReads => Set<ActivityRead>();
     public DbSet<Deal> Deals => Set<Deal>();
+    public DbSet<Notification> Notifications { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,7 +50,15 @@ public class AppDbContext : DbContext
             .HasIndex(d => d.Status);
 
         modelBuilder.Entity<Deal>()
-            .HasIndex(d => d.OwnerUserName);       
+            .HasIndex(d => d.OwnerUserName); 
+            
+        modelBuilder.Entity<Notification>(b =>
+        {
+            b.HasIndex(n => new { n.UserName, n.IsRead, n.CreatedUtc });
+            b.HasIndex(n => n.DedupeKey).IsUnique().HasFilter("[DedupeKey] IS NOT NULL");
+            b.Property(n => n.Category).HasConversion<int>();
+            b.Property(n => n.Type).HasConversion<int>();
+        });          
 
 
     }

@@ -90,11 +90,13 @@
 
         <aside class="sidebar" id="appSidebar">
             <div class="brand-logo">
-                <span class="brand-mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M4 17 9 7l4 6 3-4 4 8" /></svg>
-                </span>
-                <span class="brand-text">@AppOpt.Value.BrandName</span>
-            </div>
+    <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+            <path d="M5 19 V6.5 L12 14 L19 6.5 V19" />
+        </svg>
+    </span>
+    <span class="brand-text">Multiverse</span>
+</div>
 
             <ul class="nav flex-column sidebar-nav">
                 @foreach (var n in nav)
@@ -200,7 +202,7 @@
         </div>
     </div>
 
-    <script>
+  <script>
     // =========================================================
     // 1. Shell (sidebar + theme)
     // =========================================================
@@ -293,7 +295,7 @@
     })();
 
     // =========================================================
-    // 2. Notifications
+    // 2. Notifications (genuine, per-user)
     // =========================================================
     (function initNotifications() {
         'use strict';
@@ -304,24 +306,21 @@
         }
 
         ready(function () {
-            const bell     = document.getElementById('bellBtn');
-            const badge    = document.getElementById('bellDot');
-            const pill     = document.getElementById('notifUnreadPill');
-            const list     = document.getElementById('notifList');
-            const menu     = document.getElementById('notifMenu');
-            const popover  = document.getElementById('notifPopover');
-            const markAll  = document.getElementById('notifMarkAll');
-            const refresh  = document.getElementById('notifRefresh');
-            const footer   = document.getElementById('notifFooterText');
+            const bell    = document.getElementById('bellBtn');
+            const badge   = document.getElementById('bellDot');
+            const pill    = document.getElementById('notifUnreadPill');
+            const list    = document.getElementById('notifList');
+            const menu    = document.getElementById('notifMenu');
+            const popover = document.getElementById('notifPopover');
+            const markAll = document.getElementById('notifMarkAll');
+            const refresh = document.getElementById('notifRefresh');
+            const footer  = document.getElementById('notifFooterText');
 
-            if (!bell || !menu || !list || !popover) {
-                console.warn('[notif] required DOM nodes missing');
-                return;
-            }
+            if (!bell || !menu || !list || !popover) return;
 
             const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            let lastKnownId = 0;
             let isOpen = false;
+            let lastKnownId = 0;
 
             function setUnread(n) {
                 if (badge) {
@@ -329,80 +328,83 @@
                     badge.hidden = n === 0;
                 }
                 if (pill) {
-                    pill.textContent = n > 99 ? '99+ new' : `${n} new`;
+                    pill.textContent = n > 99 ? '99+ new' : String(n) + ' new';
                     pill.hidden = n === 0;
                 }
                 if (markAll) markAll.disabled = n === 0;
                 menu.classList.toggle('has-unread', n > 0);
             }
 
-            function iconFor(action) {
-                switch (action) {
-                    case 'Created':     return { cls: 'success', bi: 'bi-plus-lg' };
-                    case 'Updated':     return { cls: 'info',    bi: 'bi-pencil' };
-                    case 'Deleted':     return { cls: 'danger',  bi: 'bi-trash' };
-                    case 'BulkDeleted': return { cls: 'danger',  bi: 'bi-trash-fill' };
-                    case 'Imported':    return { cls: 'info',    bi: 'bi-upload' };
-                    case 'TagUpdated':  return { cls: 'warning', bi: 'bi-tags' };
-                    default:            return { cls: 'info',    bi: 'bi-dot' };
-                }
-            }
-
             function escapeHtml(s) {
                 if (s == null) return '';
                 return String(s)
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    .replace(/&/g, '\u0026amp;')
+                    .replace(/</g, '\u0026lt;')
+                    .replace(/>/g, '\u0026gt;')
+                    .replace(/"/g, '\u0026quot;');
+            }
+
+            function typeLabel(t) {
+                switch (t) {
+                    case 0: return 'Lead created';
+                    case 1: return 'Lead updated';
+                    case 2: return 'Lead deleted';
+                    case 3: return 'Assigned';
+                    case 4: return 'Follow-up due';
+                    case 5: return 'Follow-up overdue';
+                    case 6: return 'Import';
+                    case 7: return 'Mention';
+                    case 8: return 'System';
+                    default: return '';
+                }
             }
 
             function render(data) {
                 setUnread(data.unreadCount || 0);
-                if (data.items.length) lastKnownId = data.items[0].id;
 
-                if (!data.items.length) {
-                    list.innerHTML = `
-                        <div class="notif-empty">
-                            <i class="bi bi-bell-slash"></i>
-                            <span>You're all caught up</span>
-                        </div>`;
-                    if (footer) footer.textContent = 'No recent activity';
+                if (!data.items || !data.items.length) {
+                    list.innerHTML = '<div class="notif-empty"><i class="bi bi-bell-slash"></i><span>You are all caught up</span></div>';
+                    if (footer) footer.textContent = 'No notifications';
                     return;
                 }
 
-                list.innerHTML = data.items.map(it => {
-                    const { cls, bi } = iconFor(it.action);
-                    const unread = it.id > (data.lastReadId || 0);
-                    const actionText = it.action.replace(/([A-Z])/g, ' $1').trim();
-                    return `
-                        <a class="notif-item ${unread ? 'is-unread' : ''}"
-                           href="${escapeHtml(it.url || '#')}"
-                           data-id="${it.id}">
-                            <span class="notif-ico ${cls}"><i class="bi ${bi}"></i></span>
-                            <div class="notif-body">
-                                <p class="notif-title">${escapeHtml(it.title)}</p>
-                                <p class="notif-detail">${escapeHtml(actionText)}${it.detail ? ' · ' + escapeHtml(it.detail) : ''}</p>
-                                <p class="notif-meta"><strong>${escapeHtml(it.actor)}</strong> · ${escapeHtml(it.age)}</p>
-                            </div>
-                        </a>`;
+                if (data.items.length && data.items[0].id > lastKnownId)
+                    lastKnownId = data.items[0].id;
+
+                list.innerHTML = data.items.map(function (it) {
+                    var unreadClass = it.isRead ? '' : 'is-unread';
+                    var url = escapeHtml(it.url || '#');
+                    var title = escapeHtml(it.title);
+                    var message = escapeHtml(it.message || typeLabel(it.type));
+                    var actorPart = it.actorName ? '<strong>' + escapeHtml(it.actorName) + '</strong> \u00B7 ' : '';
+                    var age = escapeHtml(it.age);
+                    var tone = escapeHtml(it.tone || 'info');
+                    var iconCls = escapeHtml(it.icon || 'bi-dot');
+
+                    return '<a class="notif-item ' + unreadClass + '" href="' + url + '" data-id="' + it.id + '">' +
+                           '<span class="notif-ico ' + tone + '"><i class="bi ' + iconCls + '"></i></span>' +
+                           '<div class="notif-body">' +
+                               '<p class="notif-title">' + title + '</p>' +
+                               '<p class="notif-detail">' + message + '</p>' +
+                               '<p class="notif-meta">' + actorPart + age + '</p>' +
+                           '</div>' +
+                           '</a>';
                 }).join('');
 
-                if (footer) {
-                    footer.textContent = `${data.items.length} recent event${data.items.length === 1 ? '' : 's'}`;
-                }
+                if (footer)
+                    footer.textContent = data.items.length + ' notification' + (data.items.length === 1 ? '' : 's');
             }
 
-            async function load(silent = false) {
+            async function load(silent) {
                 try {
-                    const res = await fetch('/Notifications/Recent?take=15', {
+                    const res = await fetch('/Notifications/Recent?take=20', {
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     if (!res.ok) return;
-                    const data = await res.json();
-                    render(data);
+                    render(await res.json());
                 } catch (_) {
-                    if (!silent) {
+                    if (!silent)
                         list.innerHTML = '<div class="notif-empty">Could not load notifications</div>';
-                    }
                 }
             }
 
@@ -418,17 +420,17 @@
                 bell.setAttribute('aria-expanded', 'true');
                 positionPopover();
                 popover.hidden = false;
-                requestAnimationFrame(() => popover.classList.add('show'));
+                requestAnimationFrame(function () { popover.classList.add('show'); });
             }
 
             function closeMenu() {
                 isOpen = false;
                 bell.setAttribute('aria-expanded', 'false');
                 popover.classList.remove('show');
-                setTimeout(() => { popover.hidden = true; }, 200);
+                setTimeout(function () { popover.hidden = true; }, 200);
             }
 
-            bell.addEventListener('click', (e) => {
+            bell.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (isOpen) { closeMenu(); return; }
@@ -436,79 +438,82 @@
                 load();
             });
 
-            document.addEventListener('click', (e) => {
+            document.addEventListener('click', function (e) {
                 if (!isOpen) return;
                 if (popover.contains(e.target) || bell.contains(e.target)) return;
                 closeMenu();
             });
 
-            document.addEventListener('keydown', (e) => {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && isOpen) closeMenu();
             });
 
-            list.addEventListener('click', (e) => {
+            list.addEventListener('click', async function (e) {
                 const item = e.target.closest('.notif-item');
                 if (!item) return;
-                markAll?.click();
-                closeMenu();
+                const id = item.dataset.id;
+                if (id) {
+                    try {
+                        await fetch('/Notifications/MarkRead/' + id, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': csrf }
+                        });
+                    } catch (_) {}
+                }
             });
 
-            window.addEventListener('resize', () => {
+            window.addEventListener('resize', function () {
                 if (isOpen) positionPopover();
             });
 
-            markAll?.addEventListener('click', async (e) => {
-                e.preventDefault();
-                try {
-                    const res = await fetch('/Notifications/MarkAllRead', {
-                        method: 'POST',
-                        headers: {
-                            'RequestVerificationToken': csrf,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    if (!res.ok) return;
-                    list.querySelectorAll('.notif-item.is-unread').forEach(el => el.classList.remove('is-unread'));
-                    setUnread(0);
-                } catch (_) {}
-            });
+            if (markAll) {
+                markAll.addEventListener('click', async function (e) {
+                    e.preventDefault();
+                    try {
+                        const res = await fetch('/Notifications/MarkAllRead', {
+                            method: 'POST',
+                            headers: {
+                                'RequestVerificationToken': csrf,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        if (!res.ok) return;
+                        list.querySelectorAll('.notif-item.is-unread').forEach(function (el) {
+                            el.classList.remove('is-unread');
+                        });
+                        setUnread(0);
+                    } catch (_) {}
+                });
+            }
 
-            refresh?.addEventListener('click', (e) => {
-                e.preventDefault();
-                load();
-            });
+            if (refresh) {
+                refresh.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    load();
+                });
+            }
 
-            // Initial load
             load();
 
-            // Poll every 30 s
-            setInterval(async () => {
+            setInterval(async function () {
                 if (document.hidden) return;
                 try {
-                    const res = await fetch(`/Notifications/Poll?since=${lastKnownId}`, {
+                    const res = await fetch('/Notifications/Poll?since=' + lastKnownId, {
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     if (!res.ok) return;
                     const data = await res.json();
+                    setUnread(data.unreadCount || 0);
                     if (data.hasNew) {
                         bell.classList.add('vibrate');
-                        setTimeout(() => bell.classList.remove('vibrate'), 1000);
-                        await load(true);
-                        const res2 = await fetch('/Notifications/Recent?take=1');
-                        if (res2.ok) {
-                            const d2 = await res2.json();
-                            setUnread(d2.unreadCount || 0);
-                        }
+                        setTimeout(function () { bell.classList.remove('vibrate'); }, 1000);
+                        if (isOpen) load(true);
                     }
                 } catch (_) {}
-            }, 30000);
-
-            window.setBellUnread = function (on) {
-                setUnread(typeof on === 'number' ? on : (on ? 1 : 0));
-            };
+            }, 20000);
         });
     })();
-    </script>
+</script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

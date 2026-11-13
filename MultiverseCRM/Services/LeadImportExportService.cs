@@ -12,6 +12,11 @@ public class LeadImportExportService : ILeadImportExportService
     private readonly AppDbContext _db;
     public LeadImportExportService(AppDbContext db) => _db = db;
 
+    // ---- Per-parse lookup cache ----
+    // Fixes the bug where AnyAsync() can't see pending inserts and
+    // adds duplicate (Category, Value) rows → unique index violation.
+    private Dictionary<(string Category, string Value), bool>? _lookupCache;
+
     // ---- Column order used for both import and export ----
     private static readonly string[] Columns = new[]
     {
@@ -97,6 +102,8 @@ public class LeadImportExportService : ILeadImportExportService
     public async Task<ParseResult> ParseAsync(Stream stream, string fileName, CancellationToken ct = default)
     {
         var result = new ParseResult();
+        _lookupCache = null;   // ← reset per-parse cache
+
         var isCsv = fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
 
         XLWorkbook wb;
@@ -104,7 +111,6 @@ public class LeadImportExportService : ILeadImportExportService
         {
             if (isCsv)
             {
-                // Manual CSV -> Workbook so we don't depend on ClosedXML's CSV auto-detection
                 using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, true, 1024, leaveOpen: true);
                 var lines = new List<string[]>();
                 string? line;
@@ -229,7 +235,7 @@ public class LeadImportExportService : ILeadImportExportService
                 lead.AreaUnit ??= defaultAreaUnit;
 
                 // Auto-register unknown lookup values so they appear in dropdowns next time.
-                // Delete this block if you want imports to stay silent on the LookupOptions table.
+                // Uses cache — never inserts the same (Category, Value) twice in one import.
                 if (ir.IsValid)
                 {
                     await EnsureLookupAsync("Status",           lead.Status,           ct);
@@ -254,27 +260,56 @@ public class LeadImportExportService : ILeadImportExportService
     // ---------- helpers ----------
     private static string? NullIfEmpty(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
+    // =========================================================
+    // LOOKUP CACHE — THE FIX
+    // =========================================================
+    private async Task<Dictionary<(string Category, string Value), bool>> GetLookupCacheAsync(CancellationToken ct)
+    {
+        if (_lookupCache != null)
+            return _lookupCache;
+
+        var existing = await _db.LookupOptions
+            .AsNoTracking()
+            .Select(x => new { x.Category, x.Value })
+            .ToListAsync(ct);
+
+        _lookupCache = new Dictionary<(string, string), bool>(
+            existing.Count,
+            new LookupKeyComparer());
+
+        foreach (var x in existing)
+            _lookupCache[(x.Category ?? "", x.Value ?? "")] = true;
+
+        return _lookupCache;
+    }
+
     private async Task EnsureLookupAsync(string category, string? value, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(value)) return;
 
-        var exists = await _db.LookupOptions
-            .AnyAsync(x => x.Category == category && x.Value == value, ct);
-        if (exists) return;
+        var cache = await GetLookupCacheAsync(ct);
+        var key = (category, value.Trim());
+
+        // Already in DB OR already added earlier in this same import → skip.
+        // The cache is what prevents the duplicate-key crash.
+        if (cache.ContainsKey(key)) return;
 
         _db.LookupOptions.Add(new LookupOption
         {
             Category  = category,
-            Value     = value,
+            Value     = value.Trim(),
             Label     = null,
             Color     = null,
             SortOrder = 999,
             IsDefault = false,
             IsActive  = true
         });
+
+        // Register immediately — next row with same value won't re-add it
+        cache[key] = true;
     }
 
-    // Minimal RFC-4180-ish CSV line splitter (handles quoted fields with commas & escaped quotes)
+    // Minimal RFC-4180-ish CSV line splitter
     private static string[] ParseCsvLine(string line)
     {
         var fields = new List<string>();
@@ -303,4 +338,19 @@ public class LeadImportExportService : ILeadImportExportService
         fields.Add(sb.ToString());
         return fields.ToArray();
     }
+}
+
+// =========================================================
+// Case-insensitive key comparer for the lookup cache
+// =========================================================
+internal sealed class LookupKeyComparer : IEqualityComparer<(string Category, string Value)>
+{
+    public bool Equals((string Category, string Value) x, (string Category, string Value) y) =>
+        string.Equals(x.Category, y.Category, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(x.Value, y.Value, StringComparison.OrdinalIgnoreCase);
+
+    public int GetHashCode((string Category, string Value) obj) =>
+        HashCode.Combine(
+            (obj.Category ?? "").ToLowerInvariant(),
+            (obj.Value    ?? "").ToLowerInvariant());
 }

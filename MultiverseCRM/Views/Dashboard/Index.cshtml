@@ -1,20 +1,35 @@
+@model MultiverseCRM.ViewModels.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
     var app = AppOpt.Value;
     var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name;
-    var statuses = (List<LookupOption>)ViewBag.Statuses;
-    var counts = (Dictionary<string, int>)ViewBag.Counts;
-    int total = ViewBag.Total, unassigned = ViewBag.Unassigned, newWeek = ViewBag.NewThisWeek;
-    var recent = (List<Lead>)ViewBag.Recent;
-    var color = statuses.ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
-    var last = statuses.LastOrDefault();
+    var color = Model.Statuses.ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
     var href = Url.Action("Index", "Leads")!;
-    var cards = new List<(string Label, int Value, string Icon, string Color)> {
-        ("Total Leads", total, "bi-funnel", "#4f46e5"),
-        ("New · last 7 days", newWeek, "bi-stars", "#f59e0b"),
-        ("Unassigned", unassigned, "bi-person-exclamation", "#ef4444")
+
+    var cards = new List<(string Label, int Value, string Icon, string Color)>
+    {
+        ("Total Leads", Model.TotalLeads, "bi-funnel", "#4f46e5"),
+        ("New · last 7 days", Model.NewThisWeek, "bi-stars", "#f59e0b"),
+        ("Unassigned", Model.Unassigned, "bi-person-exclamation", "#ef4444")
     };
-    if (last != null) cards.Add((last.Label ?? last.Value, counts.GetValueOrDefault(last.Value), "bi-check2-circle", last.Color ?? "#14b8a6"));
+    var last = Model.Statuses.LastOrDefault();
+    if (last != null)
+        cards.Add((last.Label ?? last.Value, Model.ClosedCount, "bi-check2-circle", last.Color ?? "#14b8a6"));
+
+    // Build conic-gradient for donut
+    var slices = Model.SourceBreakdown;
+    var stops = new List<string>();
+    double acc = 0;
+    foreach (var s in slices)
+    {
+        var from = acc;
+        var to = acc + s.Percent;
+        stops.Add($"{s.Color} {from.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}% {to.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}%");
+        acc = to;
+    }
+    if (acc < 100)
+        stops.Add($"#E5E7EB {acc.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}% 100%");
+    var donutGradient = stops.Count > 0 ? $"conic-gradient({string.Join(",", stops)})" : "conic-gradient(#E5E7EB 0 100%)";
 }
 
 <div class="mb-4 d-flex justify-content-between align-items-end flex-wrap gap-2">
@@ -25,18 +40,19 @@
     <div class="text-muted small">Updated @Format.Stamp(DateTime.UtcNow, app.TimeZone, "hh:mm tt")</div>
 </div>
 
-@if (unassigned > 0)
+@if (Model.Unassigned > 0)
 {
     <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-3 mb-4">
         <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
         <div>
             <div class="fw-semibold" style="color:var(--ink);">Action required</div>
-            <div class="small text-muted">@unassigned lead(s) have no staff assigned.</div>
+            <div class="small text-muted">@Model.Unassigned lead(s) have no staff assigned.</div>
         </div>
         <a href="@href" class="btn btn-sm btn-primary ms-auto">Review</a>
     </div>
 }
 
+<!-- ═══ KPI CARDS ═══ -->
 <div class="row g-2 g-lg-3 mb-4">
     @foreach (var c in cards)
     {
@@ -56,15 +72,143 @@
     }
 </div>
 
+<!-- ═══ ROW 1: Tasks + Due Today + Donut ═══ -->
+<div class="row g-3 g-lg-4 mb-4">
+
+    <!-- Today's Tasks -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100 dash-widget">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-list-check me-1 text-primary"></i> Today's Tasks</h6>
+                    <span class="dash-count">@(Model.FollowUpsTodayCount + Model.FollowUpsOverdueCount)</span>
+                </div>
+
+                <div class="task-row @(Model.FollowUpsOverdueCount > 0 ? "is-alert" : "")">
+                    <i class="bi bi-alarm-fill"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small">Follow-ups due today</div>
+                        <div class="text-muted" style="font-size:.74rem;">From your pipeline</div>
+                    </div>
+                    <span class="task-num">@Model.FollowUpsTodayCount</span>
+                </div>
+
+                <div class="task-row @(Model.FollowUpsOverdueCount > 0 ? "is-alert" : "")">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small">Overdue follow-ups</div>
+                        <div class="text-muted" style="font-size:.74rem;">Needs attention</div>
+                    </div>
+                    <span class="task-num text-danger">@Model.FollowUpsOverdueCount</span>
+                </div>
+
+                <div class="task-row">
+                    <i class="bi bi-person-dash-fill"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small">Unassigned leads</div>
+                        <div class="text-muted" style="font-size:.74rem;">Assign a staff member</div>
+                    </div>
+                    <span class="task-num">@Model.Unassigned</span>
+                </div>
+
+                <div class="task-row">
+                    <i class="bi bi-stars"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold small">New this week</div>
+                        <div class="text-muted" style="font-size:.74rem;">Fresh leads</div>
+                    </div>
+                    <span class="task-num">@Model.NewThisWeek</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Follow-ups due today -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100 dash-widget">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-1 text-warning"></i> Due Today</h6>
+                    <span class="dash-count">@Model.FollowUpsTodayCount</span>
+                </div>
+                @if (Model.FollowUpsToday.Count == 0)
+                {
+                    <div class="dash-empty">
+                        <i class="bi bi-check2-circle"></i>
+                        <span>No follow-ups due today</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="dash-scroll">
+                        @foreach (var f in Model.FollowUpsToday)
+                        {
+                            <a href="@Url.Action("Index", "Leads", new { search = f.Phone })"
+                               class="dash-item">
+                                <span class="lead-avatar">@Format.Initials(f.FullName)</span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-semibold text-truncate small">@f.FullName</div>
+                                    <div class="text-muted text-truncate" style="font-size:.72rem;">
+                                        @(f.LatestRemark ?? f.Phone ?? "No details")
+                                    </div>
+                                </div>
+                                <span class="pill" style="--pill:@color.GetValueOrDefault(f.Status, "#64748b")">@f.Status</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Source donut -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100 dash-widget">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart me-1 text-info"></i> Leads by Source</h6>
+                @if (slices.Count == 0)
+                {
+                    <div class="dash-empty">
+                        <i class="bi bi-pie-chart"></i>
+                        <span>No source data</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="donut-wrap">
+                        <div class="donut" style="background: @donutGradient;">
+                            <div class="donut-hole">
+                                <div class="donut-total">@Model.TotalLeads</div>
+                                <div class="donut-label">Total</div>
+                            </div>
+                        </div>
+                        <div class="donut-legend">
+                            @foreach (var s in slices)
+                            {
+                                <div class="donut-legend-row">
+                                    <span class="donut-dot" style="background:@s.Color"></span>
+                                    <span class="donut-name text-truncate">@s.Source</span>
+                                    <span class="donut-val">@s.Count <em>@(s.Percent.ToString("0.#"))%</em></span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ROW 2: Pipeline + Recent Leads + Activity ═══ -->
 <div class="row g-3 g-lg-4">
-    <div class="col-lg-7">
+    <div class="col-lg-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
                 <h6 class="fw-bold mb-4">Pipeline</h6>
-                @foreach (var s in statuses)
+                @foreach (var s in Model.Statuses)
                 {
-                    var n = counts.GetValueOrDefault(s.Value);
-                    var pct = total == 0 ? 0 : n * 100 / total;
+                    var n = Model.StatusCounts.GetValueOrDefault(s.Value);
+                    var pct = Model.TotalLeads == 0 ? 0 : n * 100 / Model.TotalLeads;
                     <div class="mb-3" style="--c:@color[s.Value]">
                         <div class="d-flex justify-content-between small mb-1">
                             <span class="fw-medium">@(s.Label ?? s.Value)</span>
@@ -76,19 +220,56 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-5">
+
+    <div class="col-lg-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
                 <h6 class="fw-bold mb-3">Recent leads</h6>
-                @foreach (var l in recent)
+                @foreach (var l in Model.RecentLeads)
                 {
                     <div class="d-flex align-items-center gap-3 py-2 border-bottom">
                         <span class="lead-avatar">@Format.Initials(l.FullName)</span>
                         <div class="flex-grow-1 min-w-0">
-                            <div class="fw-semibold text-truncate">@l.FullName</div>
-                            <div class="small text-muted">@Format.Ago(l.CreatedAt)</div>
+                            <div class="fw-semibold text-truncate small">@l.FullName</div>
+                            <div class="text-muted" style="font-size:.72rem;">@Format.Ago(l.CreatedAt)</div>
                         </div>
-                        <span class="pill" style="--pill:@color.GetValueOrDefault(l.Status, "#64748b")">@l.Status</span>
+                        <span class="pill" style="--pill:@color.GetValueOrDefault(l.Status ?? "", "#64748b")">@l.Status</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-activity me-1 text-primary"></i> Recent Activity</h6>
+                @if (Model.RecentActivity.Count == 0)
+                {
+                    <div class="dash-empty">
+                        <i class="bi bi-inbox"></i>
+                        <span>No activity yet</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="dash-scroll">
+                        @foreach (var a in Model.RecentActivity)
+                        {
+                            <a href="@(a.Url ?? "#")" class="dash-item activity-item">
+                                <span class="notif-ico @a.ColorClass"><i class="bi @a.Icon"></i></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-semibold text-truncate small">@a.Title</div>
+                                    <div class="text-muted text-truncate" style="font-size:.72rem;">
+                                        @a.Action @(a.Detail != null ? "· " + a.Detail : "")
+                                    </div>
+                                    <div class="text-muted" style="font-size:.68rem;">
+                                        <strong>@a.Actor</strong> · @Format.Ago(a.CreatedUtc)
+                                    </div>
+                                </div>
+                            </a>
+                        }
                     </div>
                 }
             </div>

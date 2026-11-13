@@ -24,6 +24,7 @@ builder.Services.AddScoped<ILookupService,LookupService>();
 builder.Services.AddScoped<ILeadImportExportService,LeadImportExportService>();
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
 builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
     
 
 var app = builder.Build();
@@ -46,7 +47,23 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+// Optional: prune notifications older than 60 days every 6h
+_ = Task.Run(async () =>
+{
+    while (true)
+    {
+        try
+        {
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var cutoff = DateTime.UtcNow.AddDays(-60);
+            await db.Notifications.Where(n => n.CreatedUtc < cutoff)
+                .ExecuteDeleteAsync();
+        }
+        catch { }
+        await Task.Delay(TimeSpan.FromHours(6));
+    }
+});
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");

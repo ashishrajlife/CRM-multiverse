@@ -9,6 +9,11 @@ E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\MultiverseCRM.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\MultiverseCRM.pdb
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Azure.Core.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Azure.Identity.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ClosedXML.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ClosedXML.Parser.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\DocumentFormat.OpenXml.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\DocumentFormat.OpenXml.Framework.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ExcelNumberFormat.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Humanizer.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Microsoft.Bcl.AsyncInterfaces.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Microsoft.Build.Framework.dll
@@ -39,6 +44,8 @@ E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Microsoft.SqlServer.Server.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Microsoft.VisualStudio.SolutionPersistence.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Mono.TextTemplating.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\Newtonsoft.Json.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\RBush.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\SixLabors.Fonts.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.ClientModel.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.CodeDom.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.Composition.AttributedModel.dll
@@ -48,6 +55,7 @@ E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.Composition.Runtime.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.Composition.TypedParts.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.Configuration.ConfigurationManager.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll
+E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.IO.Packaging.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.Memory.Data.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.Security.Cryptography.ProtectedData.dll
 E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\cs\Microsoft.CodeAnalysis.resources.dll
@@ -148,6 +156,7 @@ E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.csproj.CoreCompi
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.MvcApplicationPartsAssemblyInfo.cache
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.RazorAssemblyInfo.cache
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.RazorAssemblyInfo.cs
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.sourcelink.json
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\rjimswa.dswa.cache.json
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -228,13 +237,4 @@ E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\refint\MultiverseCRM.dll
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.pdb
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.genruntimeconfig.cache
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\ref\MultiverseCRM.dll
-E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.sourcelink.json
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ClosedXML.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ClosedXML.Parser.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\DocumentFormat.OpenXml.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\DocumentFormat.OpenXml.Framework.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\ExcelNumberFormat.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\RBush.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\SixLabors.Fonts.dll
-E:\CRM-multiverse\MultiverseCRM\bin\Debug\net10.0\System.IO.Packaging.dll
-E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-jspl87gkbs-jspl87gkbs.gz
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-fd9gzztbhk-fd9gzztbhk.gz
