@@ -1,0 +1,670 @@
+@model MultiverseCRM.ViewModels.FollowUpsViewModel
+@{
+    ViewData["Title"] = "Follow-ups";
+    var baseUrl = Url.Action("Index", "FollowUps")!;
+
+    string PageUrl(int p) =>
+        $"{baseUrl}?tab={Model.ActiveTab}" +
+        (string.IsNullOrEmpty(Model.Search) ? "" : $"&search={Uri.EscapeDataString(Model.Search)}") +
+        (string.IsNullOrEmpty(Model.StaffFilter) ? "" : $"&staff={Uri.EscapeDataString(Model.StaffFilter!)}") +
+        $"&sortBy={Model.SortBy}&sortOrder={Model.SortOrder}&page={p}&pageSize={Model.PageSize}";
+}
+
+@* ⬇️ CRITICAL — this hidden input must exist for JS to read CSRF token *@
+@Html.AntiForgeryToken()
+
+<div class="mb-4 d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-1">Follow-ups</h3>
+        <p class="text-muted mb-0">Manage every follow-up in one place — IST timezone.</p>
+    </div>
+</div>
+
+<!-- ═══ STAT CARDS ═══ -->
+<div class="row g-2 g-lg-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <a href="@Url.Action("Index", new { tab = "overdue", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#ef4444">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="min-w-0">
+                        <div class="text-muted small fw-medium text-truncate">Overdue</div>
+                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.OverdueCount</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-3">
+        <a href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#f59e0b">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon"><i class="bi bi-alarm-fill"></i></div>
+                    <div class="min-w-0">
+                        <div class="text-muted small fw-medium text-truncate">Due today</div>
+                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.TodayCount</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-3">
+        <a href="@Url.Action("Index", new { tab = "upcoming", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#14b8a6">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon"><i class="bi bi-calendar-week-fill"></i></div>
+                    <div class="min-w-0">
+                        <div class="text-muted small fw-medium text-truncate">Upcoming</div>
+                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.UpcomingCount</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-xl-3">
+        <a href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#4f46e5">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon"><i class="bi bi-list-check"></i></div>
+                    <div class="min-w-0">
+                        <div class="text-muted small fw-medium text-truncate">All</div>
+                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.AllCount</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ═══ TABS ═══ -->
+<ul class="nav premium-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "overdue" ? "active" : "")"
+           href="@Url.Action("Index", new { tab = "overdue", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
+            <i class="bi bi-exclamation-triangle me-1"></i>Overdue
+            <span class="badge bg-danger ms-1">@Model.OverdueCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "today" ? "active" : "")"
+           href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
+            <i class="bi bi-alarm me-1"></i>Today
+            <span class="badge bg-warning text-dark ms-1">@Model.TodayCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "upcoming" ? "active" : "")"
+           href="@Url.Action("Index", new { tab = "upcoming", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
+            <i class="bi bi-calendar-week me-1"></i>Upcoming
+            <span class="badge bg-info text-dark ms-1">@Model.UpcomingCount</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "all" ? "active" : "")"
+           href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
+            <i class="bi bi-collection me-1"></i>All
+            <span class="badge bg-secondary ms-1">@Model.AllCount</span>
+        </a>
+    </li>
+</ul>
+
+<!-- ═══ FILTER BAR ═══ -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <input type="hidden" name="tab" value="@Model.ActiveTab" />
+            <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+            <div class="col-md-5 col-lg-4">
+                <label class="form-label small mb-1">Search</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.Search"
+                           class="form-control" placeholder="Name, phone, email, status…" />
+                </div>
+            </div>
+
+            <div class="col-md-3 col-lg-2">
+                <label class="form-label small mb-1">Staff</label>
+                <select name="staff" class="form-select form-select-sm">
+                    <option value="">All staff</option>
+                    @foreach (var s in Model.StaffOptions)
+                    {
+                        <option value="@s" selected="@(Model.StaffFilter == s)">@s</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-2 col-lg-2">
+                <label class="form-label small mb-1">Sort</label>
+                <select name="sortBy" class="form-select form-select-sm">
+                    <option value="RemarkDate" selected="@(Model.SortBy == "RemarkDate")">Follow-up date</option>
+                    <option value="Name" selected="@(Model.SortBy == "Name")">Name</option>
+                    <option value="Status" selected="@(Model.SortBy == "Status")">Status</option>
+                    <option value="Priority" selected="@(Model.SortBy == "Priority")">Priority</option>
+                </select>
+            </div>
+
+            <div class="col-md-1 col-lg-1">
+                <label class="form-label small mb-1">Order</label>
+                <select name="sortOrder" class="form-select form-select-sm">
+                    <option value="asc" selected="@(Model.SortOrder == "asc")">Ascending</option>
+                    <option value="desc" selected="@(Model.SortOrder == "desc")">Descending</option>
+                </select>
+            </div>
+
+            <div class="col-md-1 col-lg-1 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                <a href="@Url.Action("Index", new { tab = Model.ActiveTab })" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ BULK BAR ═══ -->
+<div id="bulkBar" class="card border-0 shadow-sm mb-2 d-none">
+    <div class="card-body p-2 d-flex align-items-center gap-2 flex-wrap">
+        <span class="small text-muted">
+            <strong id="bulkCount">0</strong> selected
+        </span>
+        <button class="btn btn-sm btn-outline-secondary" id="bulkClear">
+            <i class="bi bi-x-circle me-1"></i>Clear
+        </button>
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-sm btn-success" id="bulkDone">
+                <i class="bi bi-check2-all me-1"></i>Mark done
+            </button>
+            <button class="btn btn-sm btn-outline-primary" id="bulkReschedule">
+                <i class="bi bi-calendar-plus me-1"></i>Reschedule
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ TABLE ═══ -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-check2-circle fs-1 text-success"></i>
+                <p class="text-muted mt-3 mb-0">
+                    @(Model.ActiveTab == "overdue" ? "Koi overdue follow-up nahi — sab clear hai! 🎉"
+                    : Model.ActiveTab == "today" ? "Aaj ke liye koi follow-up nahi hai."
+                    : "Koi follow-up nahi mila.")
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="fu-table-wrap">
+                <div class="fu-table-scroll">
+                    <table class="fu-table">
+                        <thead>
+                            <tr>
+                                <th class="fu-col-check">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" />
+                                </th>
+                                <th class="fu-col-lead fu-sticky-left">Lead</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Staff</th>
+                                <th>Follow-up date</th>
+                                <th>Days</th>
+                                <th>Remark</th>
+                                <th class="fu-col-actions fu-sticky-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Rows)
+                            {
+                                var days = row.DaysFromToday;
+                                var badgeClass = days < 0 ? "fu-badge-danger" : days == 0 ? "fu-badge-warning" : "fu-badge-info";
+                                var badgeText = days < 0 ? $"{Math.Abs(days)}d overdue" : days == 0 ? "Today" : $"in {days}d";
+
+                                <tr data-id="@row.LeadId">
+                                    <td class="fu-col-check">
+                                        <input type="checkbox" class="form-check-input row-check" value="@row.LeadId" />
+                                    </td>
+                                    <td class="fu-col-lead fu-sticky-left">
+                                        <div class="d-flex align-items-center gap-2 min-w-0">
+                                            <span class="lead-avatar flex-shrink-0">@Format.Initials(row.FullName)</span>
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-truncate">@row.FullName</div>
+                                                <div class="small text-muted text-truncate">
+                                                    @row.City@(row.Project != null ? " · " + row.Project : "")
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="small">
+                                        @if (!string.IsNullOrEmpty(row.Phone))
+                                        {
+                                            <a href="tel:@row.Phone" class="text-decoration-none d-block">
+                                                <i class="bi bi-telephone me-1"></i>@row.Phone
+                                            </a>
+                                        }
+                                        @if (!string.IsNullOrEmpty(row.Email))
+                                        {
+                                            <span class="text-muted d-block text-truncate" style="max-width:14rem;">
+                                                <i class="bi bi-envelope me-1"></i>@row.Email
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="pill" style="--pill:#64748b">@row.Status</span>
+                                    </td>
+                                    <td class="small">
+                                        @if (!string.IsNullOrEmpty(row.Staff))
+                                        {
+                                            <span><i class="bi bi-person me-1"></i>@row.Staff</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td class="small">
+                                        <div class="fw-semibold">@row.RemarkDate.ToString("dd MMM yyyy")</div>
+                                        <div class="text-muted" style="font-size:.72rem;">@row.RemarkDate.DayOfWeek</div>
+                                    </td>
+                                    <td>
+                                        <span class="fu-badge @badgeClass">@badgeText</span>
+                                    </td>
+                                    <td class="small" style="max-width:20rem;">
+                                        <div class="text-truncate" title="@row.LatestRemark">
+                                            @(row.LatestRemark ?? "—")
+                                        </div>
+                                    </td>
+                                    <td class="fu-col-actions fu-sticky-right">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-success action-btn"
+                                                    data-action="done" data-id="@row.LeadId"
+                                                    title="Mark done">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary action-btn"
+                                                    data-action="reschedule" data-id="@row.LeadId"
+                                                    title="Reschedule">
+                                                <i class="bi bi-calendar-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ═══ PAGINATION ═══ -->
+                <div class="table-footer">
+                    <div class="small text-muted">
+                        Showing <strong>@(((Model.Page - 1) * Model.PageSize) + 1)</strong>
+                        –<strong>@(Math.Min(Model.Page * Model.PageSize, Model.TotalFiltered))</strong>
+                        of <strong>@Model.TotalFiltered</strong>
+                        @if (Model.TotalPages > 1)
+                        {
+                            <span>(page @Model.Page of @Model.TotalPages)</span>
+                        }
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select form-select-sm" style="width:auto;"
+                                onchange="window.location.href=this.value">
+                            @foreach (var size in new[] { 10, 25, 50, 100 })
+                            {
+                                <option value="@Url.Action("Index", new { tab = Model.ActiveTab, search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, page = 1, pageSize = size })"
+                                        selected="@(Model.PageSize == size)">@size / page</option>
+                            }
+                        </select>
+
+                        @if (Model.TotalPages > 1)
+                        {
+                            var startPage = Math.Max(1, Model.Page - 2);
+                            var endPage = Math.Min(Model.TotalPages, Model.Page + 2);
+
+                            <nav aria-label="Follow-up pagination">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@PageUrl(1)" aria-label="First">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="@PageUrl(Model.Page - 1)" aria-label="Previous">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+
+                                    @if (startPage > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="@PageUrl(1)">1</a>
+                                        </li>
+                                        @if (startPage > 2)
+                                        {
+                                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                                        }
+                                    }
+
+                                    @for (int p = startPage; p <= endPage; p++)
+                                    {
+                                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                                            <a class="page-link" href="@PageUrl(p)">@p</a>
+                                        </li>
+                                    }
+
+                                    @if (endPage < Model.TotalPages)
+                                    {
+                                        @if (endPage < Model.TotalPages - 1)
+                                        {
+                                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                                        }
+                                        <li class="page-item">
+                                            <a class="page-link" href="@PageUrl(Model.TotalPages)">@Model.TotalPages</a>
+                                        </li>
+                                    }
+
+                                    <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@PageUrl(Model.Page + 1)" aria-label="Next">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                                        <a class="page-link" href="@PageUrl(Model.TotalPages)" aria-label="Last">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ═══ RESCHEDULE MODAL ═══ -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Reschedule follow-up</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">New follow-up date</label>
+                <input type="date" class="form-control" id="rescheduleDate" />
+                <div class="small text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <span id="rescheduleCount">1 lead</span> will be rescheduled.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="rescheduleConfirm">
+                    <i class="bi bi-check2 me-1"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    // ─── CSRF ──────────────────────────────────────────────
+    const csrfInput = document.querySelector('input[name="__RequestVerificationToken"]');
+    const csrf = csrfInput ? csrfInput.value : '';
+
+    if (!csrf) {
+        console.error('[FollowUps] ❌ CSRF token missing! Add @Html.AntiForgeryToken() to the view.');
+        alert('Security token missing. Please refresh the page.');
+        return;
+    }
+
+    // ─── POST helpers ──────────────────────────────────────
+    async function postForm(url, params) {
+        const body = new URLSearchParams();
+        for (const [k, v] of Object.entries(params)) {
+            if (v !== null && v !== undefined) body.append(k, v);
+        }
+        body.append('__RequestVerificationToken', csrf);
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': csrf,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body.toString()
+        });
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch { data = { ok: false, error: `Server returned non-JSON (${res.status}): ${text.slice(0, 120)}` }; }
+
+        if (!res.ok || data.ok === false) {
+            throw new Error(data.error || data.title || `HTTP ${res.status}`);
+        }
+        return data;
+    }
+
+    async function postJson(url, payload) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': csrf,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch { data = { ok: false, error: `Server returned non-JSON (${res.status}): ${text.slice(0, 120)}` }; }
+
+        if (!res.ok || data.ok === false) {
+            throw new Error(data.error || data.title || `HTTP ${res.status}`);
+        }
+        return data;
+    }
+
+function fadeOutRow(row) {
+    if (!row) return;
+    row.style.transition = 'opacity .25s, transform .25s';
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(-20px)';
+    setTimeout(() => {
+        row.remove();
+        updateBulkBar();
+        // ✅ No reload. Show empty state if nothing left.
+        if (document.querySelectorAll('.row-check').length === 0) {
+            showEmptyState();
+        }
+    }, 250);
+}
+
+function showEmptyState() {
+    const tableWrap = document.querySelector('.fu-table-wrap');
+    if (!tableWrap) {
+        // fallback: replace whole card body
+        const cardBody = document.querySelector('.card-body.p-0');
+        if (cardBody) {
+            cardBody.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-check2-circle fs-1 text-success"></i>
+                    <p class="text-muted mt-3 mb-0">Sab follow-ups clear ho gaye! 🎉</p>
+                </div>`;
+        }
+        return;
+    }
+    tableWrap.innerHTML = `
+        <div class="text-center py-5">
+            <i class="bi bi-check2-circle fs-1 text-success"></i>
+            <p class="text-muted mt-3 mb-0">Sab follow-ups clear ho gaye! 🎉</p>
+        </div>`;
+}
+
+    // ─── Selection ─────────────────────────────────────────
+    const selectAll = document.getElementById('selectAll');
+    const bulkBar = document.getElementById('bulkBar');
+    const bulkCount = document.getElementById('bulkCount');
+    const rowChecks = () => Array.from(document.querySelectorAll('.row-check'));
+
+    function updateBulkBar() {
+        const selected = rowChecks().filter(c => c.checked);
+        const n = selected.length;
+        if (bulkBar) bulkBar.classList.toggle('d-none', n === 0);
+        if (bulkCount) bulkCount.textContent = n;
+        if (selectAll) {
+            const total = rowChecks().length;
+            selectAll.checked = n > 0 && n === total;
+            selectAll.indeterminate = n > 0 && n < total;
+        }
+    }
+
+    selectAll?.addEventListener('change', function () {
+        rowChecks().forEach(c => c.checked = this.checked);
+        updateBulkBar();
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('row-check')) updateBulkBar();
+    });
+
+    document.getElementById('bulkClear')?.addEventListener('click', () => {
+        rowChecks().forEach(c => c.checked = false);
+        updateBulkBar();
+    });
+
+    // ─── Single action buttons ─────────────────────────────
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', async function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const action = this.dataset.action;
+            const id = parseInt(this.dataset.id, 10);
+            if (!id) return;
+
+            if (action === 'reschedule') {
+                openRescheduleModal([id]);
+                return;
+            }
+
+            if (action === 'done') {
+                if (!confirm('Mark Done ?')) return;
+
+                const orig = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                try {
+                    await postForm('/FollowUps/MarkDone', { id });
+                    fadeOutRow(this.closest('tr'));
+                } catch (err) {
+                    console.error('[FollowUps] MarkDone failed:', err);
+                    this.disabled = false;
+                    this.innerHTML = orig;
+                    alert('❌ ' + err.message);
+                }
+            }
+        });
+    });
+
+    // ─── Bulk done ─────────────────────────────────────────
+    document.getElementById('bulkDone')?.addEventListener('click', async function () {
+        const ids = rowChecks().filter(c => c.checked).map(c => parseInt(c.value, 10));
+        if (!ids.length) return;
+        if (!confirm(`Mark ${ids.length} follow-up(s) as done?`)) return;
+
+        const orig = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Working…';
+
+        try {
+            await postJson('/FollowUps/BulkAction', { ids, action: 'done', newDate: null });
+            ids.forEach(id => {
+                const row = document.querySelector(`tr[data-id="${id}"]`);
+                if (row) fadeOutRow(row);
+            });
+        } catch (err) {
+            console.error('[FollowUps] Bulk done failed:', err);
+            alert('❌ ' + err.message);
+        } finally {
+            this.disabled = false;
+            this.innerHTML = orig;
+        }
+    });
+
+    // ─── Bulk reschedule ───────────────────────────────────
+    document.getElementById('bulkReschedule')?.addEventListener('click', () => {
+        const ids = rowChecks().filter(c => c.checked).map(c => parseInt(c.value, 10));
+        if (ids.length) openRescheduleModal(ids);
+    });
+
+    // ─── Reschedule modal ──────────────────────────────────
+    let pendingReschedule = [];
+    const modalEl = document.getElementById('rescheduleModal');
+    const dateInput = document.getElementById('rescheduleDate');
+    const countLabel = document.getElementById('rescheduleCount');
+    const bsModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
+    function openRescheduleModal(ids) {
+        pendingReschedule = ids;
+        if (countLabel) countLabel.textContent = `${ids.length} lead${ids.length > 1 ? 's' : ''}`;
+        if (dateInput) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.value = tomorrow.toISOString().slice(0, 10);
+            dateInput.min = new Date().toISOString().slice(0, 10);
+        }
+        bsModal?.show();
+    }
+
+    document.getElementById('rescheduleConfirm')?.addEventListener('click', async function () {
+        const newDate = dateInput?.value;
+        if (!newDate) { alert('Pick a date'); return; }
+        if (!pendingReschedule.length) return;
+
+        const orig = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Working…';
+
+        try {
+            if (pendingReschedule.length === 1) {
+                await postForm('/FollowUps/Reschedule', { id: pendingReschedule[0], newDate });
+            } else {
+                await postJson('/FollowUps/BulkAction', { ids: pendingReschedule, action: 'reschedule', newDate });
+            }
+            bsModal?.hide();
+            setTimeout(() => window.location.reload(), 200);
+        } catch (err) {
+            console.error('[FollowUps] Reschedule failed:', err);
+            alert('❌ ' + err.message);
+        } finally {
+            this.disabled = false;
+            this.innerHTML = orig;
+            pendingReschedule = [];
+        }
+    });
+})();
+</script>
+}
