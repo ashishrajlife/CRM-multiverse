@@ -1,0 +1,220 @@
+@model MultiverseCRM.ViewModels.ProjectCreateViewModel
+@{
+    ViewData["Title"] = "New Project";
+    var suggestions = new[]
+    {
+        "Swimming Pool", "Gym", "Clubhouse", "24/7 Security", "CCTV", "Power Backup", "Lift",
+        "Covered Parking", "Garden", "Kids Play Area", "Jogging Track", "Rainwater Harvesting"
+    };
+}
+
+<partial name="_ProjectUi" />
+
+<div class="mb-4">
+    <a asp-action="Index" class="text-decoration-none small text-muted">
+        <i class="bi bi-arrow-left me-1"></i>Back to Projects
+    </a>
+    <h3 class="fw-bold mb-1 mt-1">New Project</h3>
+    <p class="text-muted mb-0">Add the details, drop in your photos, and you're done.</p>
+</div>
+
+<form asp-action="Create" method="post" enctype="multipart/form-data" class="row g-3" data-mv-form>
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger small mb-0"></div>
+
+    <!-- Basic Info -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="mv-sec-title">
+                    <span class="mv-ico" style="--c:#5CD1FF"><i class="bi bi-info-circle"></i></span>
+                    <h6>Basic information<small>Name and where the project is</small></h6>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Project.Name" class="form-label">Project name *</label>
+                        <input asp-for="Project.Name" class="form-control" required maxlength="200" placeholder="e.g. Skyline Heights" autofocus />
+                        <span asp-validation-for="Project.Name" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Developer</label>
+                        <input asp-for="Project.Developer" class="form-control" maxlength="200" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">RERA number</label>
+                        <input asp-for="Project.ReraNumber" class="form-control" maxlength="100" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">City</label>
+                        <input asp-for="Project.City" class="form-control" maxlength="100" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Location / locality</label>
+                        <input asp-for="Project.Location" class="form-control" maxlength="200" />
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">Type</label>
+                        <select asp-for="Project.ProjectType" class="form-select">
+                            <option value="">Select…</option>
+                            <option>Residential</option>
+                            <option>Commercial</option>
+                            <option>Mixed Use</option>
+                            <option>Plots</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label class="form-label">Status</label>
+                        <select asp-for="Project.Status" class="form-select">
+                            <option value="">Select…</option>
+                            <option>Upcoming</option>
+                            <option>Under Construction</option>
+                            <option>Ready to Move</option>
+                            <option>Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <textarea asp-for="Project.Description" class="form-control" rows="3" maxlength="2000"
+                                  placeholder="What makes this project worth a visit?"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="mv-sec-title">
+                    <span class="mv-ico" style="--c:#F59E0B"><i class="bi bi-images"></i></span>
+                    <h6>Photos<small>Add as many as you like in one go. The first photo becomes the cover.</small></h6>
+                </div>
+                @await Html.PartialAsync("_FileDrop", new Dictionary<string, string>
+                {
+                    ["kind"] = "image",
+                    ["name"] = "ImageFiles",
+                    ["accept"] = "image/*",
+                    ["maxMb"] = "5",
+                    ["maxFiles"] = "40",
+                    ["cover"] = "true",
+                    ["title"] = "Drag photos here or click to browse",
+                    ["sub"] = "JPG, PNG or WebP. Large photos are compressed automatically to fit the 5 MB limit."
+                })
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="mv-sec-title">
+                    <span class="mv-ico" style="--c:#059669"><i class="bi bi-currency-rupee"></i></span>
+                    <h6>Pricing &amp; coverage<small>Prices show in Lakh / Crore as you type</small></h6>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label">Min price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input asp-for="Project.MinPrice" class="form-control" type="number" step="1000" min="0" data-inr />
+                        </div>
+                        <div class="mv-hint"></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Max price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input asp-for="Project.MaxPrice" class="form-control" type="number" step="1000" min="0" data-inr />
+                        </div>
+                        <div class="mv-hint"></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Total area</label>
+                        <input asp-for="Project.TotalArea" class="form-control" type="number" step="0.01" min="0" />
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label">Unit</label>
+                        <select asp-for="Project.AreaUnit" class="form-select">
+                            <option value="Sqft">Sqft</option>
+                            <option value="SqM">SqM</option>
+                            <option value="Acres">Acres</option>
+                            <option value="Hectares">Hectares</option>
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label">Units</label>
+                        <input asp-for="Project.TotalUnits" class="form-control" type="number" min="0" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Launch date</label>
+                        <input asp-for="Project.LaunchDate" class="form-control" type="date" data-launch />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Possession date</label>
+                        <input asp-for="Project.PossessionDate" class="form-control" type="date" data-possession />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Amenities -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="mv-sec-title">
+                    <span class="mv-ico" style="--c:#0EA5E9"><i class="bi bi-check2-square"></i></span>
+                    <h6>Amenities<small><span id="amenityCount">0</span> selected. Tap to add, or type your own below.</small></h6>
+                </div>
+                <div class="mv-chips" data-target="#amenityText" data-counter="#amenityCount">
+                    @foreach (var s in suggestions)
+                    {
+                        <button type="button" class="mv-chip" data-v="@s">@s</button>
+                    }
+                </div>
+                <textarea class="form-control" id="amenityText" name="AmenityNames" rows="5"
+                          placeholder="One per line, or separate with commas"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="mv-sec-title">
+                    <span class="mv-ico" style="--c:#DC2626"><i class="bi bi-file-earmark-pdf"></i></span>
+                    <h6>Documents<small>Brochures, price lists, approvals</small></h6>
+                </div>
+                @await Html.PartialAsync("_FileDrop", new Dictionary<string, string>
+                {
+                    ["kind"] = "doc",
+                    ["name"] = "DocumentFiles",
+                    ["accept"] = ".pdf,.docx,.doc,.xlsx,.xls",
+                    ["exts"] = "pdf,docx,doc,xlsx,xls",
+                    ["maxMb"] = "20",
+                    ["maxFiles"] = "20",
+                    ["title"] = "Drag documents here or click to browse",
+                    ["sub"] = "PDF, Word or Excel, up to 20 MB each."
+                })
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-12">
+        <div class="mv-actionbar">
+            <span class="mv-ab-note">Fields marked * are required.</span>
+            <div class="mv-ab-btns">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" data-mv-submit>
+                    <i class="bi bi-check2 me-1"></i>Create project
+                </button>
+            </div>
+        </div>
+    </div>
+</form>

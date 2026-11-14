@@ -25,6 +25,7 @@ builder.Services.AddScoped<ILeadImportExportService,LeadImportExportService>();
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
 builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
     
 
 var app = builder.Build();

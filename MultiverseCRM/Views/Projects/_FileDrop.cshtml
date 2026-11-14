@@ -1,0 +1,44 @@
+@* Reusable drag & drop uploader. The real <input name="..."> stays in the form, so the
+   controller keeps receiving the same IFormFile list - no backend change needed. *@
+@model Dictionary<string, string>
+@{
+    string V(string key, string fallback = "") => Model.TryGetValue(key, out var v) ? v : fallback;
+    var isImage = V("kind", "image") == "image";
+}
+<div class="mv-uploader"
+     data-kind="@V("kind", "image")"
+     data-max-mb="@V("maxMb", "5")"
+     data-max-files="@V("maxFiles", "40")"
+     data-exts="@V("exts")"
+     data-cover="@V("cover", "true")">
+
+    <div class="mv-drop-zone" tabindex="0" role="button" aria-label="@V("title")">
+        <div class="mv-drop-icon">
+            <i class="bi @(isImage ? "bi-cloud-arrow-up" : "bi-file-earmark-arrow-up")"></i>
+        </div>
+        <div class="mv-drop-title">@V("title")</div>
+        <div class="mv-drop-sub">@V("sub")</div>
+        <div class="mv-drop-actions">
+            <span class="btn btn-primary btn-sm"><i class="bi bi-folder2-open me-1"></i>Choose @(isImage ? "photos" : "files")</span>
+            @if (isImage)
+            {
+                <button type="button" class="btn btn-outline-secondary btn-sm mv-cam-btn mv-camera">
+                    <i class="bi bi-camera me-1"></i>Take photo
+                </button>
+            }
+        </div>
+    </div>
+
+    <input type="file" name="@V("name")" class="d-none mv-input" multiple accept="@V("accept")" />
+    @if (isImage)
+    {
+        <input type="file" class="d-none mv-camera-input" accept="image/*" capture="environment" />
+    }
+
+    <div class="mv-errors" hidden></div>
+    <div class="mv-sum" hidden>
+        <span class="mv-sum-text"></span>
+        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none mv-clear">Clear all</button>
+    </div>
+    <div class="mv-list @(isImage ? "mv-grid" : "mv-docs")"></div>
+</div>

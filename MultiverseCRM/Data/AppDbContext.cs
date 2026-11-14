@@ -14,6 +14,10 @@ public class AppDbContext : DbContext
     public DbSet<ActivityRead> ActivityReads => Set<ActivityRead>();
     public DbSet<Deal> Deals => Set<Deal>();
     public DbSet<Notification> Notifications { get; set; } = null!;
+    public DbSet<Project> Projects { get; set; } = null!;
+    public DbSet<ProjectImage> ProjectImages { get; set; } = null!;
+    public DbSet<ProjectAmenity> ProjectAmenities { get; set; } = null!;
+    public DbSet<ProjectDocument> ProjectDocuments { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +62,45 @@ public class AppDbContext : DbContext
             b.HasIndex(n => n.DedupeKey).IsUnique().HasFilter("[DedupeKey] IS NOT NULL");
             b.Property(n => n.Category).HasConversion<int>();
             b.Property(n => n.Type).HasConversion<int>();
+        });
+        modelBuilder.Entity<Project>(b =>
+        {
+            b.HasIndex(p => p.Name);
+            b.HasIndex(p => p.City);
+            b.HasIndex(p => p.Status);
+            b.HasIndex(p => p.IsActive);
+            b.HasIndex(p => new { p.IsActive, p.CreatedAt });
+
+            b.HasMany(p => p.Images)
+                .WithOne(i => i.Project)
+                .HasForeignKey(i => i.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasMany(p => p.Amenities)
+                .WithOne(a => a.Project)
+                .HasForeignKey(a => a.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasMany(p => p.Documents)
+                .WithOne(d => d.Project)
+                .HasForeignKey(d => d.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProjectImage>(b =>
+        {
+            b.HasIndex(i => new { i.ProjectId, i.DisplayOrder });
+            b.HasIndex(i => new { i.ProjectId, i.IsHero });
+        });
+
+        modelBuilder.Entity<ProjectAmenity>(b =>
+        {
+            b.HasIndex(a => new { a.ProjectId, a.DisplayOrder });
+        });
+
+        modelBuilder.Entity<ProjectDocument>(b =>
+        {
+            b.HasIndex(d => d.ProjectId);
         });          
 
 
