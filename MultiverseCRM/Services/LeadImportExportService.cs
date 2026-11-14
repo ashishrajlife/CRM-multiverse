@@ -12,12 +12,9 @@ public class LeadImportExportService : ILeadImportExportService
     private readonly AppDbContext _db;
     public LeadImportExportService(AppDbContext db) => _db = db;
 
-    // ---- Per-parse lookup cache ----
-    // Fixes the bug where AnyAsync() can't see pending inserts and
-    // adds duplicate (Category, Value) rows → unique index violation.
+    // Per-parse lookup cache — loaded ONCE, no per-row DB hits
     private Dictionary<(string Category, string Value), bool>? _lookupCache;
 
-    // ---- Column order used for both import and export ----
     private static readonly string[] Columns = new[]
     {
         "FullName","Phone","AltPhone","Email","City","Location",
@@ -28,13 +25,26 @@ public class LeadImportExportService : ILeadImportExportService
         "CustomerType","CustomerCategory","ChannelPartner","BirthDate"
     };
 
+    // ─── IST helper ──────────────────────────────────────────
+    private static TimeZoneInfo GetIstTz()
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"); }
+        catch
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata"); }
+            catch { return TimeZoneInfo.Utc; }
+        }
+    }
+
+    private static DateTime TodayIst() =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GetIstTz()).Date;
+
     // ============ EXPORT ============
     public byte[] Export(IReadOnlyList<Lead> leads)
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Leads");
 
-        // Header
         for (int c = 0; c < Columns.Length; c++)
         {
             var cell = ws.Cell(1, c + 1);
@@ -44,7 +54,6 @@ public class LeadImportExportService : ILeadImportExportService
             cell.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
         }
 
-        // Rows
         int r = 2;
         foreach (var l in leads)
         {
@@ -102,7 +111,7 @@ public class LeadImportExportService : ILeadImportExportService
     public async Task<ParseResult> ParseAsync(Stream stream, string fileName, CancellationToken ct = default)
     {
         var result = new ParseResult();
-        _lookupCache = null;   // ← reset per-parse cache
+        _lookupCache = null;
 
         var isCsv = fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase);
 
@@ -161,10 +170,15 @@ public class LeadImportExportService : ILeadImportExportService
                 return result;
             }
 
-            // Defaults only (not validation) — used to fill blanks
             var defaultStatus   = await _db.LookupOptions.Where(x => x.Category == "Status"   && x.IsDefault && x.IsActive).Select(x => x.Value).FirstOrDefaultAsync(ct) ?? "Fresh Lead";
             var defaultPriority = await _db.LookupOptions.Where(x => x.Category == "Priority" && x.IsDefault && x.IsActive).Select(x => x.Value).FirstOrDefaultAsync(ct) ?? "Medium";
             var defaultAreaUnit = await _db.LookupOptions.Where(x => x.Category == "AreaUnit" && x.IsDefault && x.IsActive).Select(x => x.Value).FirstOrDefaultAsync(ct) ?? "Sqft";
+
+            // Pre-load lookup cache ONCE
+            await GetLookupCacheAsync(ct);
+            var cache = _lookupCache!;
+
+            var todayIst = TodayIst();
 
             string Get(IXLRangeRow row, string col) =>
                 headerMap.TryGetValue(col, out var c) ? row.Cell(c).GetString().Trim() : "";
@@ -215,9 +229,25 @@ public class LeadImportExportService : ILeadImportExportService
                     UpdatedAt              = DateTime.UtcNow,
                 };
 
+                // ═══════════════════════════════════════════════════════
+                // PRODUCTION FIX: Roll past RemarkDate forward to today
+                // ═══════════════════════════════════════════════════════
+                if (lead.RemarkDate.HasValue)
+                {
+                    var originalDate = lead.RemarkDate.Value.Date;
+                    if (originalDate < todayIst)
+                    {
+                        lead.RemarkDate = todayIst;
+
+                        var suffix = $" · imported (adjusted from {originalDate:dd MMM yyyy})";
+                        lead.LatestRemark = string.IsNullOrWhiteSpace(lead.LatestRemark)
+                            ? $"Auto-adjusted from {originalDate:dd MMM yyyy}"
+                            : lead.LatestRemark + suffix;
+                    }
+                }
+
                 var ir = new LeadImportRow { RowNumber = rn, Lead = lead };
 
-                // ---- minimal validation only ----
                 if (string.IsNullOrWhiteSpace(lead.FullName))
                     ir.Errors.Add("FullName is required.");
 
@@ -229,25 +259,22 @@ public class LeadImportExportService : ILeadImportExportService
                 if (lead.Email is { Length: > 0 } && !lead.Email.Contains('@'))
                     ir.Errors.Add("Email is not valid.");
 
-                // Fill blanks with lookup defaults — never override user-provided values
                 lead.Status   ??= defaultStatus;
                 lead.Priority ??= defaultPriority;
                 lead.AreaUnit ??= defaultAreaUnit;
 
-                // Auto-register unknown lookup values so they appear in dropdowns next time.
-                // Uses cache — never inserts the same (Category, Value) twice in one import.
                 if (ir.IsValid)
                 {
-                    await EnsureLookupAsync("Status",           lead.Status,           ct);
-                    await EnsureLookupAsync("Priority",         lead.Priority,         ct);
-                    await EnsureLookupAsync("BHK",              lead.BHK,              ct);
-                    await EnsureLookupAsync("Furnished",        lead.Furnished,        ct);
-                    await EnsureLookupAsync("LookingFor",       lead.LookingFor,       ct);
-                    await EnsureLookupAsync("AreaUnit",         lead.AreaUnit,         ct);
-                    await EnsureLookupAsync("CustomerType",     lead.CustomerType,     ct);
-                    await EnsureLookupAsync("CustomerCategory", lead.CustomerCategory, ct);
-                    await EnsureLookupAsync("Source",           lead.Source,           ct);
-                    await EnsureLookupAsync("PrimarySource",    lead.PrimarySource,    ct);
+                    EnsureLookupSync(cache, "Status",           lead.Status);
+                    EnsureLookupSync(cache, "Priority",         lead.Priority);
+                    EnsureLookupSync(cache, "BHK",              lead.BHK);
+                    EnsureLookupSync(cache, "Furnished",        lead.Furnished);
+                    EnsureLookupSync(cache, "LookingFor",       lead.LookingFor);
+                    EnsureLookupSync(cache, "AreaUnit",         lead.AreaUnit);
+                    EnsureLookupSync(cache, "CustomerType",     lead.CustomerType);
+                    EnsureLookupSync(cache, "CustomerCategory", lead.CustomerCategory);
+                    EnsureLookupSync(cache, "Source",           lead.Source);
+                    EnsureLookupSync(cache, "PrimarySource",    lead.PrimarySource);
                 }
 
                 result.Rows.Add(ir);
@@ -257,16 +284,12 @@ public class LeadImportExportService : ILeadImportExportService
         return result;
     }
 
-    // ---------- helpers ----------
     private static string? NullIfEmpty(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
-    // =========================================================
-    // LOOKUP CACHE — THE FIX
-    // =========================================================
+    // ============ LOOKUP CACHE ============
     private async Task<Dictionary<(string Category, string Value), bool>> GetLookupCacheAsync(CancellationToken ct)
     {
-        if (_lookupCache != null)
-            return _lookupCache;
+        if (_lookupCache != null) return _lookupCache;
 
         var existing = await _db.LookupOptions
             .AsNoTracking()
@@ -283,15 +306,14 @@ public class LeadImportExportService : ILeadImportExportService
         return _lookupCache;
     }
 
-    private async Task EnsureLookupAsync(string category, string? value, CancellationToken ct)
+    private void EnsureLookupSync(
+        Dictionary<(string Category, string Value), bool> cache,
+        string category,
+        string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return;
 
-        var cache = await GetLookupCacheAsync(ct);
         var key = (category, value.Trim());
-
-        // Already in DB OR already added earlier in this same import → skip.
-        // The cache is what prevents the duplicate-key crash.
         if (cache.ContainsKey(key)) return;
 
         _db.LookupOptions.Add(new LookupOption
@@ -305,11 +327,9 @@ public class LeadImportExportService : ILeadImportExportService
             IsActive  = true
         });
 
-        // Register immediately — next row with same value won't re-add it
         cache[key] = true;
     }
 
-    // Minimal RFC-4180-ish CSV line splitter
     private static string[] ParseCsvLine(string line)
     {
         var fields = new List<string>();
@@ -340,9 +360,6 @@ public class LeadImportExportService : ILeadImportExportService
     }
 }
 
-// =========================================================
-// Case-insensitive key comparer for the lookup cache
-// =========================================================
 internal sealed class LookupKeyComparer : IEqualityComparer<(string Category, string Value)>
 {
     public bool Equals((string Category, string Value) x, (string Category, string Value) y) =>

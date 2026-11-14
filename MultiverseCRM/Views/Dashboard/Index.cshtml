@@ -198,53 +198,67 @@
         </div>
     </div>
 </div>
-
 <!-- ═══ ROW 2: Pipeline + Recent Leads + Activity ═══ -->
 <div class="row g-3 g-lg-4">
+
+    <!-- Pipeline -->
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body p-4">
-                <h6 class="fw-bold mb-4">Pipeline</h6>
-                @foreach (var s in Model.Statuses)
-                {
-                    var n = Model.StatusCounts.GetValueOrDefault(s.Value);
-                    var pct = Model.TotalLeads == 0 ? 0 : n * 100 / Model.TotalLeads;
-                    <div class="mb-3" style="--c:@color[s.Value]">
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span class="fw-medium">@(s.Label ?? s.Value)</span>
-                            <span class="text-muted">@n</span>
+        <div class="card border-0 shadow-sm h-100 dash-widget">
+            <div class="card-body p-4 d-flex flex-column">
+                <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-line me-1 text-primary"></i> Pipeline</h6>
+                <div class="dash-scroll">
+                    @foreach (var s in Model.Statuses)
+                    {
+                        var n = Model.StatusCounts.GetValueOrDefault(s.Value);
+                        var pct = Model.TotalLeads == 0 ? 0 : n * 100 / Model.TotalLeads;
+                        <div class="mb-3" style="--c:@color[s.Value]">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-medium">@(s.Label ?? s.Value)</span>
+                                <span class="text-muted">@n</span>
+                            </div>
+                            <div class="funnel-track"><div class="funnel-fill" style="width:@pct%"></div></div>
                         </div>
-                        <div class="funnel-track"><div class="funnel-fill" style="width:@pct%"></div></div>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Recent leads -->
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body p-4">
-                <h6 class="fw-bold mb-3">Recent leads</h6>
-                @foreach (var l in Model.RecentLeads)
-                {
-                    <div class="d-flex align-items-center gap-3 py-2 border-bottom">
-                        <span class="lead-avatar">@Format.Initials(l.FullName)</span>
-                        <div class="flex-grow-1 min-w-0">
-                            <div class="fw-semibold text-truncate small">@l.FullName</div>
-                            <div class="text-muted" style="font-size:.72rem;">@Format.Ago(l.CreatedAt)</div>
+        <div class="card border-0 shadow-sm h-100 dash-widget">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-person-plus me-1 text-primary"></i> Recent Leads</h6>
+                    <a href="@href" class="small text-decoration-none">View all →</a>
+                </div>
+                <div class="dash-scroll">
+                    @foreach (var l in Model.RecentLeads)
+                    {
+                        <div class="dash-item border-bottom pb-2">
+                            <span class="lead-avatar flex-shrink-0">@Format.Initials(l.FullName)</span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-semibold text-truncate small">@l.FullName</div>
+                                <div class="text-muted text-truncate" style="font-size:.72rem;">
+                                    @(l.Phone) · @Format.Ago(l.CreatedAt)
+                                </div>
+                            </div>
+                            <span class="pill" style="--pill:@color.GetValueOrDefault(l.Status ?? "", "#64748b")">@l.Status</span>
                         </div>
-                        <span class="pill" style="--pill:@color.GetValueOrDefault(l.Status ?? "", "#64748b")">@l.Status</span>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Recent Activity -->
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body p-4">
-                <h6 class="fw-bold mb-3"><i class="bi bi-activity me-1 text-primary"></i> Recent Activity</h6>
+        <div class="card border-0 shadow-sm h-100 dash-widget">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-activity me-1 text-primary"></i> Recent Activity</h6>
+                    <span class="small text-muted">@Model.RecentActivity.Count event@(Model.RecentActivity.Count == 1 ? "" : "s")</span>
+                </div>
                 @if (Model.RecentActivity.Count == 0)
                 {
                     <div class="dash-empty">
@@ -258,7 +272,9 @@
                         @foreach (var a in Model.RecentActivity)
                         {
                             <a href="@(a.Url ?? "#")" class="dash-item activity-item">
-                                <span class="notif-ico @a.ColorClass"><i class="bi @a.Icon"></i></span>
+                                <span class="notif-ico @a.ColorClass flex-shrink-0">
+                                    <i class="bi @a.Icon"></i>
+                                </span>
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="fw-semibold text-truncate small">@a.Title</div>
                                     <div class="text-muted text-truncate" style="font-size:.72rem;">

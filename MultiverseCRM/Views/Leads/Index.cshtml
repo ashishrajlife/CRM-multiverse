@@ -241,7 +241,7 @@
                         <a class="sort-header" asp-action="Index"
                            asp-route-sortBy="AreaSqft" asp-route-sortOrder="@NextOrder("AreaSqft")"
                            asp-route-status="@Model.ActiveStatus" asp-route-search="@Model.SearchTerm">
-                            Area (SQFT) <i class="bi @SortIcon("AreaSqft")"></i>
+                            Area<i class="bi @SortIcon("AreaSqft")"></i>
                         </a>
                     </th>
                     <th>Status</th>
@@ -308,7 +308,22 @@
                         <td>@(lead.Project ?? "-")</td>
                         <td>@(lead.BHK ?? "-")</td>
                         <td>@(lead.Location ?? "-")</td>
-                        <td class="fw-medium">@(lead.Price != null ? Format.Money(lead.Price, app.CurrencySymbol) : Format.Range(lead.MinPrice, lead.MaxPrice, app.CurrencySymbol))</td>
+                        <td class="fw-medium">
+                            @if (lead.MinPrice != null || lead.MaxPrice != null)
+                            {
+                                var minTxt = lead.MinPrice != null ? Format.Money(lead.MinPrice, app.CurrencySymbol) : "-";
+                                var maxTxt = lead.MaxPrice != null ? Format.Money(lead.MaxPrice, app.CurrencySymbol) : "-";
+                                <div>@minTxt &ndash; @maxTxt</div>
+                            }
+                            else if (lead.Price != null)
+                            {
+                                @Format.Money(lead.Price, app.CurrencySymbol)
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
+                        </td>
                         <td>@AreaText(lead)</td>
                         <td><span class="pill" style="--pill:@statusColor.GetValueOrDefault(lead.Status, "#64748b")">@lead.Status</span></td>
 

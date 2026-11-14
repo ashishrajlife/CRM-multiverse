@@ -27,7 +27,6 @@ public class FollowUpsController : Controller
     private string CurrentUserDisplay =>
         User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "System";
 
-    // ─── IST helper ─────────────────────────────────────────
     private static TimeZoneInfo GetIstTz()
     {
         try { return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time"); }
@@ -41,7 +40,12 @@ public class FollowUpsController : Controller
     private static DateTime TodayIst() =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GetIstTz()).Date;
 
-    // ─── Index ──────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+    // DISPLAY-LEVEL TOLERANCE
+    // Past dates within N days → display as "today" (belt & suspenders)
+    // ═══════════════════════════════════════════════════════════
+    private const int OverdueToleranceDays = 30;
+
     public async Task<IActionResult> Index(
         string tab = "today",
         string? search = null,
@@ -71,28 +75,43 @@ public class FollowUpsController : Controller
             })
             .ToListAsync(ct);
 
-        // Counts
-        var overdueRows  = allLeadsWithFollowUp.Where(l => l.RemarkDate!.Value.Date < today).ToList();
-        var todayRows    = allLeadsWithFollowUp.Where(l => l.RemarkDate!.Value.Date == today).ToList();
-        var upcomingRows = allLeadsWithFollowUp.Where(l => l.RemarkDate!.Value.Date > today).ToList();
+        // Compute effective diff with tolerance (past-30 → 0 = today)
+        var enriched = allLeadsWithFollowUp.Select(l =>
+        {
+            var rd = l.RemarkDate!.Value;
+            var actualDiff = (rd.Date - today).Days;
+            var displayDiff = (actualDiff < 0 && actualDiff > -OverdueToleranceDays)
+                ? 0
+                : actualDiff;
 
-        var staffOptions = allLeadsWithFollowUp
+            return new
+            {
+                l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
+                l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate,
+                ActualDiff = actualDiff,
+                DisplayDiff = displayDiff
+            };
+        }).ToList();
+
+        var overdueRows  = enriched.Where(l => l.DisplayDiff < 0).ToList();
+        var todayRows    = enriched.Where(l => l.DisplayDiff == 0).ToList();
+        var upcomingRows = enriched.Where(l => l.DisplayDiff > 0).ToList();
+
+        var staffOptions = enriched
             .Where(l => !string.IsNullOrWhiteSpace(l.Staff))
             .Select(l => l.Staff!)
             .Distinct()
             .OrderBy(s => s)
             .ToList();
 
-        // Filter for current tab
         List<dynamic> sourceRows = tab switch
         {
             "overdue"  => overdueRows.Cast<dynamic>().ToList(),
             "today"    => todayRows.Cast<dynamic>().ToList(),
             "upcoming" => upcomingRows.Cast<dynamic>().ToList(),
-            _          => allLeadsWithFollowUp.Cast<dynamic>().ToList()
+            _          => enriched.Cast<dynamic>().ToList()
         };
 
-        // Search
         if (!string.IsNullOrWhiteSpace(search))
         {
             var q = search.Trim().ToLowerInvariant();
@@ -104,7 +123,6 @@ public class FollowUpsController : Controller
             ).ToList();
         }
 
-        // Staff filter
         if (!string.IsNullOrWhiteSpace(staff))
         {
             sourceRows = sourceRows.Where(l =>
@@ -112,7 +130,6 @@ public class FollowUpsController : Controller
             ).ToList();
         }
 
-        // Sort
         bool asc = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase);
         sourceRows = sortBy switch
         {
@@ -122,12 +139,10 @@ public class FollowUpsController : Controller
                               : sourceRows.OrderByDescending(l => (string?)l.Status).ToList(),
             "Priority" => asc ? sourceRows.OrderBy(l => (string?)l.Priority).ToList()
                               : sourceRows.OrderByDescending(l => (string?)l.Priority).ToList(),
-            _ /* RemarkDate */ => asc
-                ? sourceRows.OrderBy(l => (DateTime?)l.RemarkDate).ToList()
-                : sourceRows.OrderByDescending(l => (DateTime?)l.RemarkDate).ToList()
+            _          => asc ? sourceRows.OrderBy(l => (DateTime?)l.RemarkDate).ToList()
+                              : sourceRows.OrderByDescending(l => (DateTime?)l.RemarkDate).ToList()
         };
 
-        // ─── Pagination ────────────────────────────────────
         int totalFiltered = sourceRows.Count;
         int totalPages = Math.Max(1, (int)Math.Ceiling(totalFiltered / (double)pageSize));
         page = Math.Min(page, totalPages);
@@ -137,12 +152,14 @@ public class FollowUpsController : Controller
             .Take(pageSize)
             .ToList();
 
-        // Map
         var vmRows = pageRows.Select(l =>
         {
             DateTime rd = (DateTime)l.RemarkDate!;
-            int diff = (rd.Date - today).Days;
-            string bucket = diff < 0 ? "overdue" : diff == 0 ? "today" : "upcoming";
+            int displayDiff = (int)l.DisplayDiff;
+
+            string bucket = displayDiff < 0 ? "overdue"
+                          : displayDiff == 0 ? "today"
+                          : "upcoming";
 
             return new FollowUpRow
             {
@@ -157,7 +174,7 @@ public class FollowUpsController : Controller
                 City = (string?)l.City,
                 LatestRemark = (string?)l.LatestRemark,
                 RemarkDate = rd,
-                DaysFromToday = diff,
+                DaysFromToday = displayDiff,
                 Bucket = bucket
             };
         }).ToList();
@@ -173,7 +190,7 @@ public class FollowUpsController : Controller
             OverdueCount = overdueRows.Count,
             TodayCount = todayRows.Count,
             UpcomingCount = upcomingRows.Count,
-            AllCount = allLeadsWithFollowUp.Count,
+            AllCount = enriched.Count,
             Page = page,
             PageSize = pageSize,
             TotalFiltered = totalFiltered,
@@ -183,41 +200,39 @@ public class FollowUpsController : Controller
         return View(vm);
     }
 
-    // ─── Mark Done (single) ─────────────────────────────────
+    // ─── Mark Done ─────────────────────────────────────────
     [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> MarkDone(int id, CancellationToken ct)
-{
-    try
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarkDone(int id, CancellationToken ct)
     {
-        var lead = await _context.Leads.FindAsync(new object[] { id }, ct);
-        if (lead == null)
-            return Json(new { ok = false, error = "Lead not found" });
+        try
+        {
+            var lead = await _context.Leads.FindAsync(new object[] { id }, ct);
+            if (lead == null)
+                return Json(new { ok = false, error = "Lead not found" });
 
-        var today = TodayIst();
-        
-        // ✅ FIX: Clear RemarkDate → lead follow-up list se completely hat jayegi
-        lead.RemarkDate = null;
-        lead.LatestRemark = $"Follow-up completed on {today:dd MMM yyyy}";
-        lead.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync(ct);
+            var today = TodayIst();
+            lead.RemarkDate = null;
+            lead.LatestRemark = $"Follow-up completed on {today:dd MMM yyyy}";
+            lead.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync(ct);
 
-        await _activity.LogAsync(
-            entity: "Lead", action: "FollowUpCompleted",
-            title: lead.FullName,
-            detail: $"Follow-up closed on {today:dd MMM yyyy}",
-            url: Url.Action("Index", "FollowUps"),
-            entityId: lead.Id);
+            await _activity.LogAsync(
+                entity: "Lead", action: "FollowUpCompleted",
+                title: lead.FullName,
+                detail: $"Follow-up closed on {today:dd MMM yyyy}",
+                url: Url.Action("Index", "FollowUps"),
+                entityId: lead.Id);
 
-        return Json(new { ok = true, closed = true });
+            return Json(new { ok = true, closed = true });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { ok = false, error = ex.Message });
+        }
     }
-    catch (Exception ex)
-    {
-        return Json(new { ok = false, error = ex.Message });
-    }
-}
 
-    // ─── Reschedule ─────────────────────────────────────────
+    // ─── Reschedule ────────────────────────────────────────
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Reschedule(int id, DateTime? newDate, CancellationToken ct)
@@ -228,8 +243,9 @@ public async Task<IActionResult> MarkDone(int id, CancellationToken ct)
             if (lead == null)
                 return Json(new { ok = false, error = "Lead not found" });
 
-            var target = (newDate ?? TodayIst()).Date;
-            if (target < TodayIst()) target = TodayIst();
+            var today = TodayIst();
+            var target = (newDate ?? today).Date;
+            if (target < today) target = today;
 
             lead.RemarkDate = target;
             lead.LatestRemark = $"Follow-up rescheduled to {target:dd MMM yyyy}";
@@ -251,7 +267,7 @@ public async Task<IActionResult> MarkDone(int id, CancellationToken ct)
         }
     }
 
-    // ─── Bulk actions ───────────────────────────────────────
+    // ─── Bulk ──────────────────────────────────────────────
     public record BulkRequest(List<int> Ids, string Action, DateTime? NewDate);
 
     [HttpPost]
@@ -301,9 +317,10 @@ public async Task<IActionResult> MarkDone(int id, CancellationToken ct)
             await _context.SaveChangesAsync(ct);
 
             await _activity.LogAsync(
-                entity: "Lead", action: req.Action == "done" ? "FollowUpCompleted" : "FollowUpRescheduled",
+                entity: "Lead",
+                action: req.Action == "done" ? "FollowUpCompleted" : "FollowUpRescheduled",
                 title: $"{leads.Count} follow-up(s) updated",
-                detail: $"Bulk action · {leads.Count} leads",
+                detail: $"Bulk · {leads.Count} leads",
                 url: Url.Action("Index", "FollowUps"));
 
             return Json(new { ok = true, count = leads.Count });
