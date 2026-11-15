@@ -621,6 +621,7 @@ a { text-underline-offset: 3px; }
     gap: 6px;
     padding: 3px 11px;
     border-radius: 999px;
+    text-wrap: nowrap;
     font-size: 0.73rem;
     font-weight: 700;
     color: color-mix(in srgb, var(--pill, #64748b) 55%, #000);
