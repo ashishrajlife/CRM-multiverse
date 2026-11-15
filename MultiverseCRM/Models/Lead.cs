@@ -69,4 +69,6 @@ public class Lead
     // Dates
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public ICollection<Property> PropertiesBooked { get; set; } = new List<Property>();
 }

@@ -116,4 +116,8 @@ public class FileStorageService : IFileStorageService
         }
         return true;
     }
+    public async Task<string> SavePropertyImageAsync(int propertyId, IFormFile file, CancellationToken ct = default)
+    {
+        return await SaveAsync($"uploads/properties/{propertyId}/images", file, ct);
+    }
 }

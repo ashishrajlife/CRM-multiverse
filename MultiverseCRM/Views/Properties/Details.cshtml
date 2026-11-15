@@ -1,0 +1,166 @@
+@model MultiverseCRM.ViewModels.PropertyDetailViewModel
+@{
+    ViewData["Title"] = $"{Model.Property.UnitNumber} — Property";
+    var p = Model.Property;
+    var heroImg = Model.Images.FirstOrDefault(i => i.IsHero) ?? Model.Images.FirstOrDefault();
+}
+
+<div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <a asp-action="Index" class="text-decoration-none small text-muted">
+            <i class="bi bi-arrow-left me-1"></i>Back to Properties
+        </a>
+        <h3 class="fw-bold mb-1 mt-1">@p.UnitNumber — @(p.Title ?? "Property")</h3>
+        <p class="text-muted mb-0">
+            @if (Model.Project != null)
+            {
+                <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id" class="text-decoration-none me-2">
+                    <i class="bi bi-building me-1"></i>@Model.Project.Name
+                </a>
+            }
+            <i class="bi bi-geo-alt me-1"></i>@(p.Location ?? "")@(p.City != null ? ", " + p.City : "")
+            <span class="badge @(p.Status switch {
+                "Available" => "bg-success",
+                "Booked" => "bg-warning text-dark",
+                "Sold" => "bg-danger",
+                _ => "bg-secondary"
+            }) ms-2">@p.Status</span>
+        </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">
+            <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+        <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline"
+              onsubmit="return confirm('Delete @p.UnitNumber?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash me-1"></i>Delete
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 g-lg-4">
+    <div class="col-lg-8">
+        @if (heroImg != null)
+        {
+            <div class="card border-0 shadow-sm mb-3 overflow-hidden">
+                <img src="~/@heroImg.FilePath" alt="@p.UnitNumber" class="img-fluid w-100" style="max-height: 480px; object-fit: cover;" />
+            </div>
+        }
+
+        @if (Model.Images.Count > 1)
+        {
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Gallery</h6>
+                    <div class="row g-2">
+                        @foreach (var img in Model.Images.Where(i => i != heroImg))
+                        {
+                            <div class="col-4 col-md-3">
+                                <img src="~/@img.FilePath" alt="@img.Caption" loading="lazy"
+                                     class="img-fluid rounded" style="aspect-ratio:1; object-fit:cover; cursor:pointer;"
+                                     onclick="window.open('@Url.Content("~/" + img.FilePath)', '_blank')" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(p.Notes))
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Notes</h6>
+                    <p class="text-muted mb-0" style="white-space: pre-line;">@p.Notes</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Property Details</h6>
+                <dl class="row mb-0 small">
+                    @if (!string.IsNullOrEmpty(p.PropertyType))
+                    {
+                        <dt class="col-5 text-muted">Type</dt>
+                        <dd class="col-7 fw-semibold">@p.PropertyType</dd>
+                    }
+                    @if (!string.IsNullOrEmpty(p.BHK))
+                    {
+                        <dt class="col-5 text-muted">BHK</dt>
+                        <dd class="col-7">@p.BHK</dd>
+                    }
+                    @if (!string.IsNullOrEmpty(p.Furnished))
+                    {
+                        <dt class="col-5 text-muted">Furnished</dt>
+                        <dd class="col-7">@p.Furnished</dd>
+                    }
+                    @if (!string.IsNullOrEmpty(p.Facing))
+                    {
+                        <dt class="col-5 text-muted">Facing</dt>
+                        <dd class="col-7">@p.Facing</dd>
+                    }
+                    @if (p.FloorNumber.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Floor</dt>
+                        <dd class="col-7">@p.FloorNumber @(p.TotalFloors.HasValue ? $"/ {p.TotalFloors}" : "")</dd>
+                    }
+                    @if (p.CarpetArea.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Carpet</dt>
+                        <dd class="col-7">@p.CarpetArea.Value.ToString("N0") @p.AreaUnit</dd>
+                    }
+                    @if (p.BuiltUpArea.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Built-up</dt>
+                        <dd class="col-7">@p.BuiltUpArea.Value.ToString("N0") @p.AreaUnit</dd>
+                    }
+                    @if (p.SuperBuiltUpArea.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Super Built-up</dt>
+                        <dd class="col-7">@p.SuperBuiltUpArea.Value.ToString("N0") @p.AreaUnit</dd>
+                    }
+                    @if (p.BasePrice.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Base Price</dt>
+                        <dd class="col-7">₹@p.BasePrice.Value.ToString("N0")</dd>
+                    }
+                    @if (p.TotalPrice.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Total Price</dt>
+                        <dd class="col-7 fw-bold text-success">₹@p.TotalPrice.Value.ToString("N0")</dd>
+                    }
+                    @if (p.PricePerSqft.HasValue)
+                    {
+                        <dt class="col-5 text-muted">Price/sqft</dt>
+                        <dd class="col-7">₹@p.PricePerSqft.Value.ToString("N0")</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(p.OwnerName) || !string.IsNullOrEmpty(p.OwnerPhone))
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Owner</h6>
+                    @if (!string.IsNullOrEmpty(p.OwnerName))
+                    {
+                        <div class="fw-semibold">@p.OwnerName</div>
+                    }
+                    @if (!string.IsNullOrEmpty(p.OwnerPhone))
+                    {
+                        <a href="tel:@p.OwnerPhone" class="text-decoration-none">
+                            <i class="bi bi-telephone me-1"></i>@p.OwnerPhone
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

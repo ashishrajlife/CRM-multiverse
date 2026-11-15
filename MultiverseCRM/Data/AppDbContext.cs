@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<ProjectImage> ProjectImages { get; set; } = null!;
     public DbSet<ProjectAmenity> ProjectAmenities { get; set; } = null!;
     public DbSet<ProjectDocument> ProjectDocuments { get; set; } = null!;
+    public DbSet<Property> Properties { get; set; } = null!;
+    public DbSet<PropertyImage> PropertyImages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -101,7 +103,38 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectDocument>(b =>
         {
             b.HasIndex(d => d.ProjectId);
-        });          
+        });   
+        modelBuilder.Entity<Property>(b =>
+        {
+            // Primary lookup indexes
+            b.HasIndex(p => p.UnitNumber);
+            b.HasIndex(p => p.Status);
+            b.HasIndex(p => p.City);
+            b.HasIndex(p => p.ProjectId);
+            b.HasIndex(p => new { p.IsActive, p.Status });
+            b.HasIndex(p => new { p.IsActive, p.CreatedAt });
+
+            // Unique constraint: no duplicate unit numbers per project
+            b.HasIndex(p => new { p.ProjectId, p.UnitNumber })
+                .IsUnique()
+                .HasFilter("[ProjectId] IS NOT NULL");
+
+            b.HasOne(p => p.Project)
+                .WithMany()
+                .HasForeignKey(p => p.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            b.HasMany(p => p.Images)
+                .WithOne(i => i.Property)
+                .HasForeignKey(i => i.PropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PropertyImage>(b =>
+        {
+            b.HasIndex(i => new { i.PropertyId, i.DisplayOrder });
+            b.HasIndex(i => new { i.PropertyId, i.IsHero });
+        });       
 
 
     }

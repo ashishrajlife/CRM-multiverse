@@ -1,0 +1,313 @@
+@model MultiverseCRM.ViewModels.PropertyListViewModel
+@{
+    ViewData["Title"] = "Properties";
+    var baseUrl = Url.Action("Index", "Properties")!;
+
+    string PageUrl(int p) =>
+        $"{baseUrl}?search={Uri.EscapeDataString(Model.Search ?? "")}" +
+        (string.IsNullOrEmpty(Model.StatusFilter) ? "" : $"&status={Uri.EscapeDataString(Model.StatusFilter)}") +
+        (string.IsNullOrEmpty(Model.CityFilter) ? "" : $"&city={Uri.EscapeDataString(Model.CityFilter)}") +
+        (string.IsNullOrEmpty(Model.BHKFilter) ? "" : $"&bhk={Uri.EscapeDataString(Model.BHKFilter)}") +
+        (Model.ProjectFilter.HasValue ? $"&projectId={Model.ProjectFilter}" : "") +
+        $"&sortBy={Model.SortBy}&sortOrder={Model.SortOrder}&page={p}&pageSize={Model.PageSize}";
+
+    string StatusBadge(string s) => s switch
+    {
+        "Available" => "bg-success",
+        "Booked" => "bg-warning text-dark",
+        "Sold" => "bg-danger",
+        "Blocked" => "bg-secondary",
+        "Under Construction" => "bg-info text-dark",
+        _ => "bg-secondary"
+    };
+}
+
+<style>
+    .prop-card {
+        background: var(--glass-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: transform .28s var(--ease), box-shadow .28s var(--ease);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .prop-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lift);
+    }
+    .prop-card-img {
+        aspect-ratio: 16/10;
+        background: linear-gradient(135deg, #E0E7FF, #C7D2FE);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; position: relative;
+    }
+    .prop-card-img img {
+        width: 100%; height: 100%; object-fit: cover;
+        transition: transform .5s var(--ease);
+    }
+    .prop-card:hover .prop-card-img img { transform: scale(1.05); }
+    .prop-card-img .placeholder-icon { font-size: 3rem; color: #6366F1; opacity: .5; }
+    .prop-badge-status {
+        position: absolute; top: .65rem; right: .65rem;
+        padding: 4px 10px; border-radius: 6px;
+        font-size: .7rem; font-weight: 700;
+        backdrop-filter: blur(8px);
+    }
+    .prop-badge-featured {
+        position: absolute; top: .65rem; left: .65rem;
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+        color: #fff; padding: 4px 10px; border-radius: 999px;
+        font-size: .68rem; font-weight: 800;
+    }
+    .prop-card-body { padding: 1rem; flex: 1 1 auto; display: flex; flex-direction: column; }
+    .prop-card-title { font-weight: 700; font-size: 1rem; margin-bottom: .25rem; color: var(--ink); }
+    .prop-card-meta { font-size: .8rem; color: var(--ink-soft); margin-bottom: .5rem; }
+    .prop-card-price { font-weight: 800; font-size: .95rem; color: #059669; margin-top: auto; }
+    .prop-card-footer {
+        padding: .75rem 1rem;
+        border-top: 1px solid var(--glass-line);
+        display: flex; gap: .5rem; align-items: center;
+        font-size: .75rem; color: var(--ink-soft);
+    }
+    [data-theme="dark"] .prop-card-img { background: linear-gradient(135deg, #1E293B, #334155); }
+    [data-theme="dark"] .prop-card-img .placeholder-icon { color: #94A3B8; }
+    [data-theme="dark"] .prop-card-price { color: #34D399; }
+</style>
+
+<div class="mb-4 d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> New Property
+    </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-2 g-lg-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm kpi-card" style="--c:#4f46e5">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="kpi-icon"><i class="bi bi-house"></i></div>
+                <div class="min-w-0">
+                    <div class="text-muted small fw-medium text-truncate">Total</div>
+                    <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.TotalCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm kpi-card" style="--c:#10b981">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="min-w-0">
+                    <div class="text-muted small fw-medium text-truncate">Available</div>
+                    <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.AvailableCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm kpi-card" style="--c:#f59e0b">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="kpi-icon"><i class="bi bi-bookmark-check"></i></div>
+                <div class="min-w-0">
+                    <div class="text-muted small fw-medium text-truncate">Booked</div>
+                    <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.BookedCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm kpi-card" style="--c:#ef4444">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="kpi-icon"><i class="bi bi-x-circle"></i></div>
+                <div class="min-w-0">
+                    <div class="text-muted small fw-medium text-truncate">Sold</div>
+                    <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.SoldCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <input type="hidden" name="pageSize" value="@Model.PageSize" />
+            <input type="hidden" name="page" value="1" />
+
+            <div class="col-12 col-md-3">
+                <label class="form-label small mb-1">Search</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.Search" class="form-control"
+                           placeholder="Unit #, title, city…" />
+                </div>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All statuses</option>
+                    @foreach (var s in Model.StatusOptions)
+                    {
+                        <option value="@s" selected="@(Model.StatusFilter == s)">@s</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Project</label>
+                <select name="projectId" class="form-select form-select-sm">
+                    <option value="">All projects</option>
+                    @foreach (var p in Model.ProjectOptions)
+                    {
+                        <option value="@p.Id" selected="@(Model.ProjectFilter == p.Id)">@p.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">BHK</label>
+                <select name="bhk" class="form-select form-select-sm">
+                    <option value="">All BHK</option>
+                    @foreach (var b in Model.BHKOptions)
+                    {
+                        <option value="@b" selected="@(Model.BHKFilter == b)">@b</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Sort</label>
+                <select name="sortBy" class="form-select form-select-sm">
+                    <option value="CreatedAt" selected="@(Model.SortBy == "CreatedAt")">Newest</option>
+                    <option value="UnitNumber" selected="@(Model.SortBy == "UnitNumber")">Unit #</option>
+                    <option value="TotalPrice" selected="@(Model.SortBy == "TotalPrice")">Price</option>
+                    <option value="CarpetArea" selected="@(Model.SortBy == "CarpetArea")">Area</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary flex-fill">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary flex-fill">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Grid -->
+@if (Model.Properties.Count == 0)
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-house fs-1 text-muted"></i>
+            <p class="text-muted mt-3 mb-3">No properties found.</p>
+            <a asp-action="Create" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Create your first property
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3 g-lg-4 mb-3">
+        @foreach (var p in Model.Properties)
+        {
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none">
+                    <div class="prop-card">
+                        <div class="prop-card-img">
+                            @if (!string.IsNullOrEmpty(p.HeroImagePath))
+                            {
+                                <img src="~/@p.HeroImagePath" alt="@p.UnitNumber" loading="lazy" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-house placeholder-icon"></i>
+                            }
+                            @if (p.IsFeatured)
+                            {
+                                <span class="prop-badge-featured">
+                                    <i class="bi bi-star-fill me-1"></i>Featured
+                                </span>
+                            }
+                            <span class="prop-badge-status badge @StatusBadge(p.Status)">@p.Status</span>
+                        </div>
+                        <div class="prop-card-body">
+                            <div class="prop-card-title text-truncate">
+                                @p.UnitNumber
+                                @if (!string.IsNullOrEmpty(p.Title)) { <text>— @p.Title</text> }
+                            </div>
+                            <div class="prop-card-meta">
+                                @if (!string.IsNullOrEmpty(p.ProjectName))
+                                {
+                                    <div class="text-truncate"><i class="bi bi-building me-1"></i>@p.ProjectName</div>
+                                }
+                                <div class="text-truncate"><i class="bi bi-geo-alt me-1"></i>@(p.Location ?? p.City ?? "—")</div>
+                                <div class="d-flex gap-2 mt-1">
+                                    @if (!string.IsNullOrEmpty(p.BHK))
+                                    {
+                                        <span class="badge bg-light text-dark">@p.BHK</span>
+                                    }
+                                    @if (p.CarpetArea.HasValue)
+                                    {
+                                        <span class="badge bg-light text-dark">@p.CarpetArea.Value.ToString("N0") sqft</span>
+                                    }
+                                </div>
+                            </div>
+                            @if (p.TotalPrice.HasValue)
+                            {
+                                <div class="prop-card-price">₹@p.TotalPrice.Value.ToString("N0")</div>
+                            }
+                        </div>
+                        <div class="prop-card-footer">
+                            <span><i class="bi bi-image me-1"></i>@p.ImageCount</span>
+                            <span class="ms-auto">@p.CreatedAt.ToString("dd MMM")</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="small text-muted">
+                Showing <strong>@(((Model.Page - 1) * Model.PageSize) + 1)</strong>
+                –<strong>@(Math.Min(Model.Page * Model.PageSize, Model.TotalFiltered))</strong>
+                of <strong>@Model.TotalFiltered</strong> properties
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                            <a class="page-link" href="@PageUrl(Model.Page - 1)">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@PageUrl(i)">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@PageUrl(Model.Page + 1)">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+}

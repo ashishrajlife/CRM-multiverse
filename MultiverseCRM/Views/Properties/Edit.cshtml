@@ -1,0 +1,60 @@
+@model MultiverseCRM.ViewModels.PropertyEditViewModel
+@{
+    ViewData["Title"] = $"Edit — {Model.Property.UnitNumber}";
+    var p = Model.Property;
+}
+
+<div class="mb-4">
+    <a asp-action="Details" asp-route-id="@p.Id" class="text-decoration-none small text-muted">
+        <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+    <h3 class="fw-bold mb-1 mt-1">Edit Property</h3>
+</div>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data" class="row g-3">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Property.Id" />
+
+    <!-- Same fields as Create — copy from Create.cshtml with asp-for bindings -->
+    <!-- ... Full copy of Create form with existing data populated ... -->
+
+    <!-- Existing Images -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-images me-1 text-info"></i> Existing Images (@Model.ExistingImages.Count)</h6>
+                @if (Model.ExistingImages.Count > 0)
+                {
+                    <div class="row g-2 mb-3">
+                        @foreach (var img in Model.ExistingImages)
+                        {
+                            <div class="col-6 col-md-3 col-lg-2">
+                                <div class="position-relative" style="aspect-ratio:1; overflow:hidden; border-radius:.6rem;">
+                                    <img src="~/@img.FilePath" class="w-100 h-100" style="object-fit:cover;" />
+                                    @if (img.IsHero)
+                                    {
+                                        <span class="badge bg-warning text-dark position-absolute" style="top:.35rem; left:.35rem; font-size:.62rem;">
+                                            <i class="bi bi-star-fill"></i> HERO
+                                        </span>
+                                    }
+                                    <label class="btn btn-sm btn-light position-absolute" style="bottom:.35rem; right:.35rem; padding:.15rem .3rem;">
+                                        <input type="checkbox" name="KeepImageIds" value="@img.Id" checked class="form-check-input m-0" />
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                <label class="form-label small fw-semibold">Upload New Images</label>
+                <input type="file" name="ImageFiles" class="form-control" accept="image/*" multiple />
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 d-flex justify-content-end gap-2">
+        <a asp-action="Details" asp-route-id="@p.Id" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2 me-1"></i>Save Changes
+        </button>
+    </div>
+</form>

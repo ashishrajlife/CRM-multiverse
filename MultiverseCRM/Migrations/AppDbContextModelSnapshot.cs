@@ -671,6 +671,202 @@ namespace MultiverseCRM.Migrations
                     b.ToTable("ProjectImages");
                 });
 
+            modelBuilder.Entity("MultiverseCRM.Models.Property", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AreaUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("BHK")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("BasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("BookingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("BookingLeadId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("BuiltUpArea")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("CarpetArea")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("DealId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Facing")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("FloorNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Furnished")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("HeroImagePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("LeadId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OwnerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("OwnerPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("PricePerSqft")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PropertyType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("SoldDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("SuperBuiltUpArea")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("TotalFloors")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UnitNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("City");
+
+                    b.HasIndex("DealId")
+                        .IsUnique()
+                        .HasFilter("[DealId] IS NOT NULL");
+
+                    b.HasIndex("LeadId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UnitNumber");
+
+                    b.HasIndex("IsActive", "CreatedAt");
+
+                    b.HasIndex("IsActive", "Status");
+
+                    b.HasIndex("ProjectId", "UnitNumber")
+                        .IsUnique()
+                        .HasFilter("[ProjectId] IS NOT NULL");
+
+                    b.ToTable("Properties");
+                });
+
+            modelBuilder.Entity("MultiverseCRM.Models.PropertyImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsHero")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId", "DisplayOrder");
+
+                    b.HasIndex("PropertyId", "IsHero");
+
+                    b.ToTable("PropertyImages");
+                });
+
             modelBuilder.Entity("MultiverseCRM.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -757,12 +953,56 @@ namespace MultiverseCRM.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("MultiverseCRM.Models.Property", b =>
+                {
+                    b.HasOne("MultiverseCRM.Models.Deal", null)
+                        .WithOne("Property")
+                        .HasForeignKey("MultiverseCRM.Models.Property", "DealId");
+
+                    b.HasOne("MultiverseCRM.Models.Lead", null)
+                        .WithMany("PropertiesBooked")
+                        .HasForeignKey("LeadId");
+
+                    b.HasOne("MultiverseCRM.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("MultiverseCRM.Models.PropertyImage", b =>
+                {
+                    b.HasOne("MultiverseCRM.Models.Property", "Property")
+                        .WithMany("Images")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("MultiverseCRM.Models.Deal", b =>
+                {
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("MultiverseCRM.Models.Lead", b =>
+                {
+                    b.Navigation("PropertiesBooked");
+                });
+
             modelBuilder.Entity("MultiverseCRM.Models.Project", b =>
                 {
                     b.Navigation("Amenities");
 
                     b.Navigation("Documents");
 
+                    b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("MultiverseCRM.Models.Property", b =>
+                {
                     b.Navigation("Images");
                 });
 #pragma warning restore 612, 618

@@ -7,4 +7,5 @@ public interface IFileStorageService
     Task DeleteAsync(string relativePath, CancellationToken ct = default);
     bool IsValidImage(IFormFile file, out string? error);
     bool IsValidDocument(IFormFile file, out string? error);
+   Task<string> SavePropertyImageAsync(int propertyId, IFormFile file, CancellationToken ct = default);
 }
