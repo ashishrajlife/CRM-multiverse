@@ -311,6 +311,9 @@ namespace MultiverseCRM.Migrations
                     b.Property<string>("Project")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
+
                     b.Property<string>("PropertyType")
                         .HasColumnType("nvarchar(max)");
 
@@ -349,6 +352,9 @@ namespace MultiverseCRM.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProjectId")
+                        .HasFilter("[ProjectId] IS NOT NULL");
 
                     b.ToTable("Leads");
                 });
@@ -918,6 +924,16 @@ namespace MultiverseCRM.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Lead");
+                });
+
+            modelBuilder.Entity("MultiverseCRM.Models.Lead", b =>
+                {
+                    b.HasOne("MultiverseCRM.Models.Project", "ProjectEntity")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ProjectEntity");
                 });
 
             modelBuilder.Entity("MultiverseCRM.Models.ProjectAmenity", b =>

@@ -122,10 +122,21 @@
 
                     <h6 class="fw-bold mb-3" style="color:var(--aqua-deep);"><i class="bi bi-house-door me-1"></i> Property Preference</h6>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-medium">Project</label>
-                            <input name="Project" class="form-control" list="dl-project" autocomplete="off" placeholder="Project name..." />
+                      <div class="col-md-6">
+                        <label class="form-label small fw-medium">Project</label>
+                        <div class="input-group">
+                            <select name="ProjectId" class="form-select">
+                                <option value="">— Select project —</option>
+                                @foreach (var p in Model.AvailableProjects)
+                                {
+                                    <option value="@p.Id">@p.Name</option>
+                                }
+                                <option value="__custom__">+ Custom project…</option>
+                            </select>
                         </div>
+                        <input name="Project" class="form-control mt-2 d-none"
+                            placeholder="Type custom project name" />
+                    </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-medium">BHK</label>
                             <lookup-select category="BHK" name="BHK" placeholder="Select BHK..." />

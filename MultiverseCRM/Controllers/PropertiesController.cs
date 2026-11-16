@@ -15,16 +15,19 @@ public class PropertiesController : Controller
     private readonly IFileStorageService _files;
     private readonly IActivityLogger _activity;
     private readonly ILogger<PropertiesController> _log;
+    private readonly IPropertyMatchService _matchService;
 
     public PropertiesController(
         AppDbContext context,
         IFileStorageService files,
         IActivityLogger activity,
+        IPropertyMatchService matchService,
         ILogger<PropertiesController> log)
     {
         _context = context;
         _files = files;
         _activity = activity;
+        _matchService = matchService;
         _log = log;
     }
 
@@ -175,7 +178,7 @@ public class PropertiesController : Controller
     // ═══════════════════════════════════════════════════════
     // DETAILS
     // ═══════════════════════════════════════════════════════
-    public async Task<IActionResult> Details(int id, CancellationToken ct)
+   public async Task<IActionResult> Details(int id, CancellationToken ct)
     {
         var property = await _context.Properties.AsNoTracking()
             .Include(p => p.Project)
@@ -189,11 +192,14 @@ public class PropertiesController : Controller
             .ThenBy(i => i.Id)
             .ToListAsync(ct);
 
+        var matchingLeads = await _matchService.MatchPropertyToLeadsAsync(id, 10, ct);
+
         var vm = new PropertyDetailViewModel
         {
             Property = property,
             Project = property.Project,
-            Images = images
+            Images = images,
+            MatchingLeads = matchingLeads   // ← new field
         };
 
         return View(vm);
@@ -323,128 +329,129 @@ public class PropertiesController : Controller
         return View(vm);
     }
 
-    // ═══════════════════════════════════════════════════════
-    // EDIT (POST)
-    // ═══════════════════════════════════════════════════════
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    [RequestSizeLimit(50_000_000)]
-    public async Task<IActionResult> Edit(PropertyEditViewModel vm, CancellationToken ct)
+   // ═══════════════════════════════════════════════════════
+// EDIT (POST)
+// ═══════════════════════════════════════════════════════
+[HttpPost]
+[ValidateAntiForgeryToken]
+[RequestSizeLimit(50_000_000)]
+public async Task<IActionResult> Edit(PropertyEditViewModel vm, CancellationToken ct)
+{
+    if (!ModelState.IsValid)
     {
-        if (!ModelState.IsValid)
-        {
-            vm.AvailableProjects = await LoadProjectOptionsAsync(ct);
-            vm.ExistingImages = await _context.PropertyImages.AsNoTracking()
-                .Where(i => i.PropertyId == vm.Property.Id)
-                .OrderBy(i => i.DisplayOrder)
-                .ToListAsync(ct);
-            TempData["Error"] = "Please fix validation errors.";
-            return View(vm);
-        }
-
-        var property = await _context.Properties
-            .FirstOrDefaultAsync(p => p.Id == vm.Property.Id, ct);
-        if (property == null) return NotFound();
-
-        // Update fields
-        property.UnitNumber = vm.Property.UnitNumber;
-        property.Title = vm.Property.Title;
-        property.ProjectId = vm.Property.ProjectId;
-        property.PropertyType = vm.Property.PropertyType;
-        property.BHK = vm.Property.BHK;
-        property.Furnished = vm.Property.Furnished;
-        property.Facing = vm.Property.Facing;
-        property.FloorNumber = vm.Property.FloorNumber;
-        property.TotalFloors = vm.Property.TotalFloors;
-        property.CarpetArea = vm.Property.CarpetArea;
-        property.BuiltUpArea = vm.Property.BuiltUpArea;
-        property.SuperBuiltUpArea = vm.Property.SuperBuiltUpArea;
-        property.AreaUnit = vm.Property.AreaUnit;
-        property.BasePrice = vm.Property.BasePrice;
-        property.TotalPrice = vm.Property.TotalPrice;
-        property.PricePerSqft = vm.Property.PricePerSqft;
-        property.City = vm.Property.City;
-        property.Location = vm.Property.Location;
-        property.Address = vm.Property.Address;
-        property.Status = vm.Property.Status;
-        property.OwnerName = vm.Property.OwnerName;
-        property.OwnerPhone = vm.Property.OwnerPhone;
-        property.BookingDate = vm.Property.BookingDate;
-        property.SoldDate = vm.Property.SoldDate;
-        property.BookingLeadId = vm.Property.BookingLeadId;
-        property.DealId = vm.Property.DealId;
-        property.Notes = vm.Property.Notes;
-        property.IsActive = vm.Property.IsActive;
-        property.IsFeatured = vm.Property.IsFeatured;
-        property.UpdatedAt = DateTime.UtcNow;
-
-        // Image deletions
-        var keepIds = vm.KeepImageIds ?? new List<int>();
-        var existingImages = await _context.PropertyImages
-            .Where(i => i.PropertyId == property.Id)
+        vm.AvailableProjects = await LoadProjectOptionsAsync(ct);
+        vm.ExistingImages = await _context.PropertyImages.AsNoTracking()
+            .Where(i => i.PropertyId == vm.Property.Id)
+            .OrderBy(i => i.DisplayOrder)
             .ToListAsync(ct);
-
-        foreach (var img in existingImages)
-        {
-            if (!keepIds.Contains(img.Id))
-            {
-                await _files.DeleteAsync(img.FilePath, ct);
-                _context.PropertyImages.Remove(img);
-            }
-        }
-
-        // New images
-        if (vm.ImageFiles?.Any() == true)
-        {
-            var maxOrder = existingImages.Any() ? existingImages.Max(i => i.DisplayOrder) + 1 : 0;
-            var hadHero = existingImages.Any(i => keepIds.Contains(i.Id) && i.IsHero);
-
-            foreach (var file in vm.ImageFiles)
-            {
-                if (!_files.IsValidImage(file, out _)) continue;
-                var path = await _files.SavePropertyImageAsync(property.Id, file, ct);
-                var isHero = !hadHero;
-                _context.PropertyImages.Add(new PropertyImage
-                {
-                    PropertyId = property.Id,
-                    FilePath = path,
-                    DisplayOrder = maxOrder++,
-                    IsHero = isHero,
-                    IsActive = true
-                });
-                if (isHero) hadHero = true;
-            }
-        }
-
-        await _context.SaveChangesAsync(ct);
-
-        // Update hero path
-        var hero = await _context.PropertyImages.AsNoTracking()
-            .Where(i => i.PropertyId == property.Id && i.IsActive)
-            .OrderByDescending(i => i.IsHero)
-            .ThenBy(i => i.DisplayOrder)
-            .FirstOrDefaultAsync(ct);
-
-        if (hero != null && property.HeroImagePath != hero.FilePath)
-        {
-            var tracked = await _context.Properties.FindAsync(new object[] { property.Id }, ct);
-            if (tracked != null)
-            {
-                tracked.HeroImagePath = hero.FilePath;
-                await _context.SaveChangesAsync(ct);
-            }
-        }
-
-        await _activity.LogAsync(
-            entity: "Property", action: "Updated",
-            title: $"{property.UnitNumber} — {property.Title ?? "Property"}",
-            detail: $"Status: {property.Status}",
-            url: Url.Action("Index", "Properties"),
-            entityId: property.Id);
-
-        TempData["Success"] = $"Property '{property.UnitNumber}' updated!";
-        return RedirectToAction(nameof(Details), new { id = property.Id });
+        TempData["Error"] = "Please fix validation errors.";
+        return View(vm);
     }
+
+    var property = await _context.Properties
+        .FirstOrDefaultAsync(p => p.Id == vm.Property.Id, ct);
+    if (property == null) return NotFound();
+
+    // Update scalar fields
+    property.UnitNumber = vm.Property.UnitNumber;
+    property.Title = vm.Property.Title;
+    property.ProjectId = vm.Property.ProjectId;
+    property.PropertyType = vm.Property.PropertyType;
+    property.BHK = vm.Property.BHK;
+    property.Furnished = vm.Property.Furnished;
+    property.Facing = vm.Property.Facing;
+    property.FloorNumber = vm.Property.FloorNumber;
+    property.TotalFloors = vm.Property.TotalFloors;
+    property.CarpetArea = vm.Property.CarpetArea;
+    property.BuiltUpArea = vm.Property.BuiltUpArea;
+    property.SuperBuiltUpArea = vm.Property.SuperBuiltUpArea;
+    property.AreaUnit = vm.Property.AreaUnit;
+    property.BasePrice = vm.Property.BasePrice;
+    property.TotalPrice = vm.Property.TotalPrice;
+    property.PricePerSqft = vm.Property.PricePerSqft;
+    property.City = vm.Property.City;
+    property.Location = vm.Property.Location;
+    property.Address = vm.Property.Address;
+    property.Status = vm.Property.Status;
+    property.OwnerName = vm.Property.OwnerName;
+    property.OwnerPhone = vm.Property.OwnerPhone;
+    property.BookingDate = vm.Property.BookingDate;
+    property.SoldDate = vm.Property.SoldDate;
+    property.BookingLeadId = vm.Property.BookingLeadId;
+    property.DealId = vm.Property.DealId;
+    property.Notes = vm.Property.Notes;
+    property.IsActive = vm.Property.IsActive;
+    property.IsFeatured = vm.Property.IsFeatured;
+    property.UpdatedAt = DateTime.UtcNow;
+
+    // Image deletions — only checkboxes
+    var keepIds = vm.KeepImageIds ?? new List<int>();
+    var existingImages = await _context.PropertyImages
+        .Where(i => i.PropertyId == property.Id)
+        .ToListAsync(ct);
+
+    foreach (var img in existingImages)
+    {
+        if (!keepIds.Contains(img.Id))
+        {
+            await _files.DeleteAsync(img.FilePath, ct);
+            _context.PropertyImages.Remove(img);
+        }
+    }
+
+    // New images — first one becomes hero only if no hero exists
+    if (vm.ImageFiles?.Any() == true)
+    {
+        var maxOrder = existingImages.Any() ? existingImages.Max(i => i.DisplayOrder) + 1 : 0;
+        var hadHero = existingImages.Any(i => keepIds.Contains(i.Id) && i.IsHero);
+
+        foreach (var file in vm.ImageFiles)
+        {
+            if (!_files.IsValidImage(file, out _)) continue;
+            var path = await _files.SavePropertyImageAsync(property.Id, file, ct);
+            var isHero = !hadHero;
+            _context.PropertyImages.Add(new PropertyImage
+            {
+                PropertyId = property.Id,
+                FilePath = path,
+                DisplayOrder = maxOrder++,
+                IsHero = isHero,
+                IsActive = true
+            });
+            if (isHero) hadHero = true;
+        }
+    }
+
+    await _context.SaveChangesAsync(ct);
+
+    // Sync HeroImagePath — first active hero, else first image
+    var hero = await _context.PropertyImages.AsNoTracking()
+        .Where(i => i.PropertyId == property.Id && i.IsActive)
+        .OrderByDescending(i => i.IsHero)
+        .ThenBy(i => i.DisplayOrder)
+        .FirstOrDefaultAsync(ct);
+
+    if (hero != null && property.HeroImagePath != hero.FilePath)
+    {
+        property.HeroImagePath = hero.FilePath;
+        await _context.SaveChangesAsync(ct);
+    }
+    else if (hero == null && property.HeroImagePath != null)
+    {
+        property.HeroImagePath = null;
+        await _context.SaveChangesAsync(ct);
+    }
+
+    await _activity.LogAsync(
+        entity: "Property", action: "Updated",
+        title: $"{property.UnitNumber} — {property.Title ?? "Property"}",
+        detail: $"Status: {property.Status}",
+        url: Url.Action("Index", "Properties"),
+        entityId: property.Id);
+
+    TempData["Success"] = $"Property '{property.UnitNumber}' updated!";
+    return RedirectToAction(nameof(Details), new { id = property.Id });
+}
 
     // ═══════════════════════════════════════════════════════
     // DELETE
@@ -473,6 +480,13 @@ public class PropertiesController : Controller
 
         TempData["Success"] = $"Property '{property.UnitNumber}' deleted.";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> MatchesPanel(int propertyId, CancellationToken ct)
+    {
+        var vm = await _matchService.GetPropertyMatchesPanelAsync(propertyId, ct);
+        return PartialView("_MatchingLeadsPanel", vm);
     }
 
     // ═══════════════════════════════════════════════════════

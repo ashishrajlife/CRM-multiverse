@@ -134,7 +134,17 @@ public class AppDbContext : DbContext
         {
             b.HasIndex(i => new { i.PropertyId, i.DisplayOrder });
             b.HasIndex(i => new { i.PropertyId, i.IsHero });
-        });       
+        }); 
+          
+        modelBuilder.Entity<Lead>(b =>
+        {
+            b.HasOne(l => l.ProjectEntity)
+                .WithMany()
+                .HasForeignKey(l => l.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            b.HasIndex(l => l.ProjectId).HasFilter("[ProjectId] IS NOT NULL");
+        });    
 
 
     }

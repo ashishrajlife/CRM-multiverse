@@ -1,0 +1,51 @@
+@model MultiverseCRM.ViewModels.MatchingPanelViewModel
+
+@if (Model.TotalMatches == 0)
+{
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-person-x fs-1 opacity-50"></i>
+        <p class="mt-2 mb-0 small">No matching leads found.</p>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="small text-muted">
+            <strong>@Model.TotalMatches</strong> matching leads ·
+            <span class="text-success"><strong>@Model.StrongMatches</strong> strong</span>
+        </div>
+    </div>
+
+    <div class="list-group list-group-flush">
+        @foreach (var m in Model.Leads)
+        {
+            <a asp-controller="Leads" asp-action="Index" asp-route-search="@m.Phone"
+               class="list-group-item list-group-item-action px-3 py-2 d-flex gap-3 align-items-start">
+                <div class="lead-avatar flex-shrink-0">@Format.Initials(m.FullName)</div>
+
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate">@m.FullName</div>
+                    <div class="small text-muted text-truncate">
+                        @m.Phone
+                        @if (!string.IsNullOrEmpty(m.City)) { <text> · @m.City</text> }
+                        @if (!string.IsNullOrEmpty(m.BHK)) { <text> · @m.BHK</text> }
+                        @if (m.MinPrice.HasValue || m.MaxPrice.HasValue)
+                        {
+                            <text> · ₹@((m.MinPrice ?? 0).ToString("N0"))@(m.MaxPrice.HasValue ? "–₹" + m.MaxPrice.Value.ToString("N0") : "")</text>
+                        }
+                    </div>
+                    @if (m.MatchedOn.Any())
+                    {
+                        <div class="small text-muted mt-1">
+                            @string.Join(" · ", m.MatchedOn)
+                        </div>
+                    }
+                </div>
+
+                <span class="badge bg-@m.Tier flex-shrink-0" style="font-size:.75rem;">
+                    @m.Score%
+                </span>
+            </a>
+        }
+    </div>
+}

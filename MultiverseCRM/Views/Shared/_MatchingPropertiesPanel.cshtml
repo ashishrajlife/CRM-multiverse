@@ -1,0 +1,62 @@
+@model MultiverseCRM.ViewModels.MatchingPanelViewModel
+
+@if (Model.TotalMatches == 0)
+{
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-house fs-1 opacity-50"></i>
+        <p class="mt-2 mb-0 small">No matching properties found.</p>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="small text-muted">
+            <strong>@Model.TotalMatches</strong> matching properties ·
+            <span class="text-success"><strong>@Model.StrongMatches</strong> strong</span>
+        </div>
+    </div>
+
+    <div class="list-group list-group-flush">
+        @foreach (var m in Model.Properties)
+        {
+            <a asp-controller="Properties" asp-action="Details" asp-route-id="@m.PropertyId"
+               class="list-group-item list-group-item-action px-3 py-2 d-flex gap-3 align-items-start"
+               target="_blank">
+                @if (!string.IsNullOrEmpty(m.HeroImagePath))
+                {
+                    <img src="~/@m.HeroImagePath" alt="" class="rounded flex-shrink-0"
+                         style="width:48px; height:48px; object-fit:cover;" loading="lazy" />
+                }
+                else
+                {
+                    <div class="rounded flex-shrink-0 d-flex align-items-center justify-content-center"
+                         style="width:48px; height:48px; background:rgba(99,102,241,.12);">
+                        <i class="bi bi-house text-primary"></i>
+                    </div>
+                }
+
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold text-truncate">
+                        Unit @m.UnitNumber
+                        @if (!string.IsNullOrEmpty(m.Title)) { <text> — @m.Title</text> }
+                    </div>
+                    <div class="small text-muted text-truncate">
+                        @if (!string.IsNullOrEmpty(m.ProjectName)) { <text>@m.ProjectName · </text> }
+                        @m.City @(m.BHK != null ? "· " + m.BHK : "")
+                        @if (m.TotalPrice.HasValue) { <text> · ₹@m.TotalPrice.Value.ToString("N0")</text> }
+                    </div>
+                    @if (m.MatchedOn.Any())
+                    {
+                        <div class="small text-muted mt-1">
+                            @string.Join(" · ", m.MatchedOn)
+                        </div>
+                    }
+                </div>
+
+                <span class="badge bg-@m.Tier flex-shrink-0" style="font-size:.75rem;">
+                    @m.Score%
+                </span>
+            </a>
+        }
+    </div>
+}

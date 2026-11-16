@@ -76,7 +76,4 @@ public class ProjectEditViewModel
 
     // Image IDs to KEEP (unchecked ones get deleted)
     public List<int>? KeepImageIds { get; set; }
-
-    // New hero image (optional)
-    public int? NewHeroImageId { get; set; }
 }

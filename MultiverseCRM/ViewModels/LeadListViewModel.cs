@@ -15,9 +15,10 @@ public class LeadListViewModel
     
     // Tab counts
     public int TotalCount { get; set; }
-public Dictionary<string, int> StatusCounts { get; set; } = new();
-public int FilteredCount { get; set; }
-public int Page { get; set; } = 1;
-public int PageSize { get; set; } = 25;
+    public Dictionary<string, int> StatusCounts { get; set; } = new();
+    public int FilteredCount { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
+    public List<ProjectOption> AvailableProjects { get; set; } = new();
 
 }

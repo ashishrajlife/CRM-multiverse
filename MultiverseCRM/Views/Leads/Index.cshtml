@@ -245,7 +245,7 @@
                         </a>
                     </th>
                     <th>Status</th>
-                    <th class="sticky-col-right text-center" style="min-width: 100px;">Actions</th>
+                    <th class="sticky-col-right text-center" style="min-width: 170px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -328,16 +328,40 @@
                         <td><span class="pill" style="--pill:@statusColor.GetValueOrDefault(lead.Status, "#64748b")">@lead.Status</span></td>
 
                         <td class="sticky-col-right text-center">
-                            <button class="btn btn-sm btn-link text-primary p-1 btn-edit-lead" title="Edit"
-                                    data-lead="@LeadJson(lead)"
-                                    data-bs-toggle="modal" data-bs-target="#editLeadModal">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-link text-danger p-1 btn-delete-lead" title="Delete"
-                                    data-id="@lead.Id" data-fullname="@lead.FullName"
-                                    data-bs-toggle="modal" data-bs-target="#deleteLeadModal">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div class="d-inline-flex gap-1">
+                                <!-- 👁️ View details -->
+                                <button class="btn btn-sm btn-link text-info p-1 btn-view-lead"
+                                        title="View full details"
+                                        data-lead="@LeadJson(lead)"
+                                        data-bs-toggle="modal" data-bs-target="#viewLeadModal">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+
+                                <!-- 🎯 Matching properties -->
+                                <button class="btn btn-sm btn-link text-warning p-1 btn-match-lead"
+                                        title="Matching properties"
+                                        data-id="@lead.Id"
+                                        data-fullname="@lead.FullName"
+                                        data-bs-toggle="modal" data-bs-target="#matchLeadModal">
+                                    <i class="bi bi-bullseye"></i>
+                                </button>
+
+                                <!-- ✏️ Edit -->
+                                <button class="btn btn-sm btn-link text-primary p-1 btn-edit-lead"
+                                        title="Edit"
+                                        data-lead="@LeadJson(lead)"
+                                        data-bs-toggle="modal" data-bs-target="#editLeadModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+
+                                <!-- 🗑️ Delete -->
+                                <button class="btn btn-sm btn-link text-danger p-1 btn-delete-lead"
+                                        title="Delete"
+                                        data-id="@lead.Id" data-fullname="@lead.FullName"
+                                        data-bs-toggle="modal" data-bs-target="#deleteLeadModal">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 }
@@ -454,26 +478,135 @@
 <partial name="_EditLeadModal" />
 <partial name="_DeleteLeadModal" />
 
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- VIEW LEAD DETAILS MODAL                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="viewLeadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="modal-icon-aqua rounded p-2">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" id="viewLeadName">Lead Details</h6>
+                        <small class="text-muted" id="viewLeadMeta" style="font-size:.75rem;"></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4" style="overflow-y:auto;">
+                <!-- Populated via JS -->
+                <div id="viewLeadContent">
+                    <div class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Loading…
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MATCHING PROPERTIES MODAL                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="modal fade" id="matchLeadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded p-2" style="background:rgba(245,158,11,.18);color:#B45309;">
+                        <i class="bi bi-bullseye"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Matching Properties</h6>
+                        <small class="text-muted" id="matchLeadMeta" style="font-size:.75rem;"></small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-3" style="overflow-y:auto;">
+                <div id="matchLeadContent">
+                    <div class="text-center py-4 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Finding matches…
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
     <script>
         const existingTags = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllTags));
-        const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const csrf = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        const urls = {
+            updateTags: '@Url.Action("UpdateTags", "Leads")',
+            import: '@Url.Action("Import", "Leads")',
+            matchesPanel: '@Url.Action("MatchesPanel", "Leads")'
+        };
+
+        // Matching popup values (from TempData — captured once)
+        const matchPopup = (function() {
+            @if (TempData["LeadId"] != null && TempData["MatchCount"] != null)
+            {
+                var mc = (int)TempData["MatchCount"]!;
+                if (mc > 0)
+                {
+                    <text>
+                    return {
+                        leadId: @((int)TempData["LeadId"]!),
+                        count: @mc,
+                        strong: @((int)TempData["StrongMatches"]!),
+                        name: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["LeadName"] ?? "new lead"))
+                    };
+                    </text>
+                }
+            }
+            return null;
+        })();
+
+        // ═══════════════════════════════════════════════════════
+        // Helpers
+        // ═══════════════════════════════════════════════════════
+        const esc = s => String(s ?? '').replace(/[&<>"']/g,
+            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
         const tagCfg = () => ({
-            plugins: ['remove_button'], create: true, createOnBlur: true, persist: false, delimiter: ',',
+            plugins: ['remove_button'],
+            create: true,
+            createOnBlur: true,
+            persist: false,
+            delimiter: ',',
             options: existingTags.map(t => ({ value: t, text: t }))
         });
 
-        // ===== Inline tag editors =====
+        // ═══════════════════════════════════════════════════════
+        // Tag editors
+        // ═══════════════════════════════════════════════════════
         document.querySelectorAll('.tag-selector').forEach(el => {
             new TomSelect(el, {
                 ...tagCfg(),
                 onChange(v) {
-                    fetch('@Url.Action("UpdateTags", "Leads")', {
+                    fetch(urls.updateTags, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': csrf },
                         body: JSON.stringify({ id: +el.dataset.leadId, tags: Array.isArray(v) ? v.join(',') : v })
@@ -485,10 +618,12 @@
         new TomSelect('#add-Tags', tagCfg());
         const editTags = new TomSelect('#edit-Tags', tagCfg());
 
-        // ===== Select all / bulk delete =====
+        // ═══════════════════════════════════════════════════════
+        // Selection / bulk
+        // ═══════════════════════════════════════════════════════
         const selectAll = document.getElementById('selectAllLeads');
         const rowChecks = () => Array.from(document.querySelectorAll('.lead-checkbox'));
-        const bulkBar   = document.getElementById('bulkBar');
+        const bulkBar = document.getElementById('bulkBar');
         const bulkCount = document.getElementById('bulkCount');
 
         function refreshBulkUI() {
@@ -524,15 +659,21 @@
             document.getElementById('bulkDeleteForm').submit();
         });
 
-        // ===== Edit + Delete single =====
+        // ═══════════════════════════════════════════════════════
+        // Delete single
+        // ═══════════════════════════════════════════════════════
         document.addEventListener('click', e => {
             const del = e.target.closest('.btn-delete-lead');
             if (del) {
                 document.getElementById('delete-Id').value = del.dataset.id;
                 document.getElementById('delete-lead-name').textContent = del.dataset.fullname || 'this lead';
-                return;
             }
+        });
 
+        // ═══════════════════════════════════════════════════════
+        // Edit single
+        // ═══════════════════════════════════════════════════════
+        document.addEventListener('click', e => {
             const btn = e.target.closest('.btn-edit-lead');
             if (!btn) return;
             const lead = JSON.parse(btn.dataset.lead);
@@ -560,13 +701,15 @@
             });
         });
 
-        // ===== Import =====
+        // ═══════════════════════════════════════════════════════
+        // Import
+        // ═══════════════════════════════════════════════════════
         const importForm = document.getElementById('importForm');
-        const importBtn  = document.getElementById('importBtn');
-        const importErr  = document.getElementById('importError');
+        const importBtn = document.getElementById('importBtn');
+        const importErr = document.getElementById('importError');
         let importedSomething = false;
 
-        function setBusy(on) {
+        function setImportBusy(on) {
             importBtn.disabled = on;
             importBtn.querySelector('.label').classList.toggle('d-none', on);
             importBtn.querySelector('.spinner-border').classList.toggle('d-none', !on);
@@ -574,15 +717,16 @@
 
         function renderImportResult(d) {
             const total = d.totalRows ?? 0, ok = d.insertedCount ?? 0,
-                  skip = d.skippedCount ?? 0, err = d.errorCount ?? 0;
+                skip = d.skippedCount ?? 0, err = d.errorCount ?? 0;
             importedSomething = ok > 0;
+
             const set = (id, v) => document.getElementById(id).textContent = v;
             set('impTotal', total); set('impOk', ok); set('impSkip', skip); set('impErr', err);
 
             let state, title, sub;
-            if (total > 0 && ok === total) { state = 'ok';   title = 'Import successful';            sub = `All ${total} leads were imported.`; }
-            else if (ok > 0)               { state = 'warn'; title = 'Import completed with issues'; sub = `${ok} of ${total} leads imported. ${total - ok} need attention.`; }
-            else                           { state = 'fail'; title = 'No leads were imported';       sub = total ? 'Fix the issues below and upload again.' : 'The file had no data rows.'; }
+            if (total > 0 && ok === total) { state = 'ok'; title = 'Import successful'; sub = `All ${total} leads were imported.`; }
+            else if (ok > 0) { state = 'warn'; title = 'Import completed with issues'; sub = `${ok} of ${total} leads imported. ${total - ok} need attention.`; }
+            else { state = 'fail'; title = 'No leads were imported'; sub = total ? 'Fix the issues below and upload again.' : 'The file had no data rows.'; }
 
             const icon = document.getElementById('impIcon');
             icon.className = `rounded p-2 imp-icon ${state}`;
@@ -597,7 +741,7 @@
             document.getElementById('impRows').innerHTML = problems.slice(0, LIMIT).map(r => {
                 const dup = String(r.status).startsWith('Skipped');
                 const reasons = String(r.message ?? '').split(';').map(s => s.trim()).filter(Boolean)
-                                  .map(s => `<div>${esc(s)}</div>`).join('') || '<div>—</div>';
+                    .map(s => `<div>${esc(s)}</div>`).join('') || '<div>—</div>';
                 return `<tr>
                     <td class="text-muted">${esc(r.rowNumber)}</td>
                     <td class="fw-medium">${esc(r.fullName) || '—'}</td>
@@ -610,7 +754,6 @@
                 problems.length > LIMIT ? `Showing the first ${LIMIT} of ${problems.length} rows.` : '';
         }
 
-        // Refresh the list after the result popup closes, only if something was imported
         document.getElementById('importResultModal')?.addEventListener('hidden.bs.modal', () => {
             if (importedSomething) location.reload();
         });
@@ -620,35 +763,39 @@
             importErr.classList.add('d-none');
 
             const file = document.getElementById('importFile').files[0];
-            if (!file) { importErr.textContent = 'Please choose a file.'; importErr.classList.remove('d-none'); return; }
+            if (!file) {
+                importErr.textContent = 'Please choose a file.';
+                importErr.classList.remove('d-none');
+                return;
+            }
 
             const fd = new FormData();
             fd.append('file', file);
             fd.append('__RequestVerificationToken', csrf);
 
-            setBusy(true);
+            setImportBusy(true);
             try {
-                const res  = await fetch('@Url.Action("Import", "Leads")', { method: 'POST', body: fd });
+                const res = await fetch(urls.import, { method: 'POST', body: fd });
                 const text = await res.text();
                 if (!res.ok) {
                     importErr.textContent = text || 'Import failed.';
                     importErr.classList.remove('d-none');
                     return;
                 }
-
                 renderImportResult(JSON.parse(text));
-
                 bootstrap.Modal.getInstance(document.getElementById('importLeadModal'))?.hide();
                 new bootstrap.Modal(document.getElementById('importResultModal')).show();
             } catch (ex) {
                 importErr.textContent = 'Upload failed: ' + ex.message;
                 importErr.classList.remove('d-none');
             } finally {
-                setBusy(false);
+                setImportBusy(false);
             }
         });
 
-        // ===== Copy phone number =====
+        // ═══════════════════════════════════════════════════════
+        // Copy phone
+        // ═══════════════════════════════════════════════════════
         document.addEventListener('click', async (e) => {
             const btn = e.target.closest('.copy-phone');
             if (!btn) return;
@@ -687,7 +834,9 @@
             }
         });
 
-        // ===== Area unit label follows the "Area Unit" dropdown =====
+        // ═══════════════════════════════════════════════════════
+        // Area unit label
+        // ═══════════════════════════════════════════════════════
         function syncAreaUnit(modal) {
             const unit = (modal.querySelector('select[name="AreaUnit"]')?.value || '').trim();
             modal.querySelectorAll('.area-unit-label').forEach(el => el.textContent = unit ? `(${unit})` : '');
@@ -700,39 +849,238 @@
             m.addEventListener('change', e => { if (e.target.matches('select[name="AreaUnit"]')) syncAreaUnit(m); });
             m.addEventListener('shown.bs.modal', () => syncAreaUnit(m));
         });
-        // ===== Export with spinner =====
-const exportBtn = document.getElementById('exportBtn');
-function setExportBusy(on) {
-    exportBtn.classList.toggle('disabled', on);
-    exportBtn.setAttribute('aria-busy', on);
-    exportBtn.querySelector('.label').classList.toggle('d-none', on);
-    exportBtn.querySelector('.busy').classList.toggle('d-none', !on);
-}
-exportBtn?.addEventListener('click', async e => {
-    e.preventDefault();
-    if (exportBtn.classList.contains('disabled')) return;
-    setExportBusy(true);
-    try {
-        const res = await fetch(exportBtn.href, { credentials: 'same-origin' });
-        if (!res.ok) throw new Error('Server returned ' + res.status);
-        if ((res.headers.get('Content-Type') || '').includes('text/html'))
-            throw new Error('Session expired. Please sign in again.');
 
-        const blob = await res.blob();
-        const cd = res.headers.get('Content-Disposition') || '';
-        const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
-        const name = m ? decodeURIComponent(m[1]) : 'leads.xlsx';
+        // ═══════════════════════════════════════════════════════
+        // Export
+        // ═══════════════════════════════════════════════════════
+        const exportBtn = document.getElementById('exportBtn');
+        function setExportBusy(on) {
+            exportBtn.classList.toggle('disabled', on);
+            exportBtn.setAttribute('aria-busy', on);
+            exportBtn.querySelector('.label').classList.toggle('d-none', on);
+            exportBtn.querySelector('.busy').classList.toggle('d-none', !on);
+        }
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-    } catch (err) {
-        alert('Export failed: ' + err.message);
-    } finally {
-        setExportBusy(false);
-    }
-});
+        exportBtn?.addEventListener('click', async e => {
+            e.preventDefault();
+            if (exportBtn.classList.contains('disabled')) return;
+            setExportBusy(true);
+            try {
+                const res = await fetch(exportBtn.href, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('Server returned ' + res.status);
+                if ((res.headers.get('Content-Type') || '').includes('text/html'))
+                    throw new Error('Session expired. Please sign in again.');
+
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+                const name = m ? decodeURIComponent(m[1]) : 'leads.xlsx';
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = name;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            } finally {
+                setExportBusy(false);
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // Matching properties popup (after create)
+        // ═══════════════════════════════════════════════════════
+        if (matchPopup) {
+            setTimeout(async function () {
+                try {
+                    const res = await fetch(urls.matchesPanel + '?leadId=' + matchPopup.leadId);
+                    if (!res.ok) return;
+                    const html = await res.text();
+
+                    const modal = document.createElement('div');
+                    modal.className = 'modal fade';
+                    modal.tabIndex = -1;
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content border-0 shadow-lg">
+                                <div class="modal-header border-bottom">
+                                    <div>
+                                        <h6 class="fw-bold mb-0">
+                                            <i class="bi bi-stars text-warning me-1"></i>
+                                            ${matchPopup.count} matching properties found
+                                        </h6>
+                                        <div class="small text-muted">
+                                            ${matchPopup.strong} strong matches · Lead: ${esc(matchPopup.name)}
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body p-3">${html}</div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(modal);
+                    new bootstrap.Modal(modal).show();
+                    modal.addEventListener('hidden.bs.modal', () => modal.remove());
+                } catch (e) {
+                    console.error('Match popup error:', e);
+                }
+            }, 300);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // View lead details — eye icon
+        // ═══════════════════════════════════════════════════════
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-view-lead');
+            if (!btn) return;
+
+            const lead = JSON.parse(btn.dataset.lead);
+
+            document.getElementById('viewLeadName').textContent = lead.FullName || 'Lead';
+            document.getElementById('viewLeadMeta').textContent =
+                (lead.Phone ? '📞 ' + lead.Phone : '') +
+                (lead.Email ? ' · ✉️ ' + lead.Email : '');
+
+            const content = document.getElementById('viewLeadContent');
+
+          const row = (label, value, opts = {}) => {
+          if (!value && value !== 0) return '';
+            const isHtmlString = typeof value === 'string' && /^\s*</.test(value.trim());
+            const content = opts.html != null
+                ? opts.html
+                : isHtmlString
+                    ? value                        // already HTML — use as-is
+                    : esc(value);                  // plain text — escape
+
+            return `
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <div class="text-muted small">${esc(label)}</div>
+                    <div class="fw-medium text-end ms-3" style="max-width:60%;">${content}</div>
+                </div>`;
+        };
+
+            const section = (title, icon, fields) => {
+                const html = fields.filter(Boolean).join('');
+                if (!html) return '';
+                return `
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2 small text-uppercase" style="color:var(--aqua-deep);letter-spacing:.05em;">
+                            <i class="bi ${icon} me-1"></i>${esc(title)}
+                        </h6>
+                        <div>${html}</div>
+                    </div>`;
+            };
+
+            const money = v => v != null ? '₹' + Number(v).toLocaleString('en-IN') : null;
+            const dateFmt = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+            const dtFmt = d => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+            const badge = (v, color) => v ? `<span class="badge" style="background:${color || '#64748b'}20;color:${color || '#64748b'};">${esc(v)}</span>` : null;
+
+            content.innerHTML = `
+                ${section('Basic Info', 'bi-person', [
+                    row('Full Name', lead.FullName),
+                    row('Phone', lead.Phone, { html: lead.Phone ? `<a href="tel:${esc(lead.Phone)}" class="text-decoration-none">${esc(lead.Phone)}</a>` : null }),
+                    row('Alternate Phone', lead.AltPhone),
+                    row('Email', lead.Email, { html: lead.Email ? `<a href="mailto:${esc(lead.Email)}" class="text-decoration-none">${esc(lead.Email)}</a>` : null }),
+                    row('City', lead.City),
+                    row('Location', lead.Location),
+                    row('Birth Date', dateFmt(lead.BirthDate)),
+                ])}
+
+                ${section('Status & Assignment', 'bi-clipboard-check', [
+                    row('Status', lead.Status, { html: badge(lead.Status, '#4f46e5') }),
+                    row('Priority', lead.Priority, { html: badge(lead.Priority, '#f59e0b') }),
+                    row('Staff', lead.Staff),
+                    row('Source', lead.Source),
+                    row('Primary Source', lead.PrimarySource),
+                    row('Channel Partner', lead.ChannelPartner),
+                    row('Customer Type', lead.CustomerType),
+                    row('Customer Category', lead.CustomerCategory),
+                ])}
+
+                ${section('Requirement', 'bi-house-door', [
+                    row('Looking For', lead.LookingFor),
+                    row('Project', lead.Project),
+                    row('BHK', lead.BHK),
+                    row('Furnished', lead.Furnished),
+                    row('Min Price', money(lead.MinPrice)),
+                    row('Max Price', money(lead.MaxPrice)),
+                    row('Price', money(lead.Price)),
+                    row('Min Area', lead.MinArea ? `${lead.MinArea} ${lead.AreaUnit || 'sqft'}` : null),
+                    row('Max Area', lead.MaxArea ? `${lead.MaxArea} ${lead.AreaUnit || 'sqft'}` : null),
+                    row('Area', lead.AreaSqft ? `${lead.AreaSqft} ${lead.AreaUnit || 'sqft'}` : null),
+                ])}
+
+                ${section('Remarks & Tags', 'bi-chat-dots', [
+                    row('Latest Remark', lead.LatestRemark),
+                    row('Remark Assigned', lead.RemarkAssignedTo),
+                    row('Remark Date', dtFmt(lead.RemarkDate)),
+                    row('Additional Requirements', lead.AdditionalRequirements),
+                    row('Tags', lead.Tags, {
+                        html: lead.Tags
+                            ? lead.Tags.split(',').map(t => `<span class="badge bg-light text-dark me-1 mb-1">${esc(t.trim())}</span>`).join('')
+                            : null
+                    }),
+                ])}
+
+                ${section('Timeline', 'bi-clock-history', [
+                    row('Created', dtFmt(lead.CreatedAt)),
+                    row('Updated', dtFmt(lead.UpdatedAt)),
+                    row('Assigned At', dtFmt(lead.AssignedAt)),
+                ])}
+            `;
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // Matching properties — bullseye icon
+        // ═══════════════════════════════════════════════════════
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.btn-match-lead');
+            if (!btn) return;
+
+            const leadId = btn.dataset.id;
+            const fullName = btn.dataset.fullname || 'Lead';
+
+            document.getElementById('matchLeadMeta').textContent = 'for ' + fullName;
+
+            const content = document.getElementById('matchLeadContent');
+            content.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-warning" role="status"></div>
+                    <div class="text-muted mt-3 small">Finding matching properties…</div>
+                </div>`;
+
+            fetch(urls.matchesPanel + '?leadId=' + leadId, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text();
+                })
+                .then(html => { content.innerHTML = html; })
+                .catch(err => {
+                    content.innerHTML = `
+                        <div class="alert alert-danger mb-0">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            Could not load matches: ${esc(err.message)}
+                        </div>`;
+                });
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // Clear modals on close
+        // ═══════════════════════════════════════════════════════
+        ['viewLeadModal', 'matchLeadModal'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('hidden.bs.modal', function () {
+                const content = this.querySelector('[id$="Content"]');
+                if (content) content.innerHTML = '';
+            });
+        });
     </script>
 }
