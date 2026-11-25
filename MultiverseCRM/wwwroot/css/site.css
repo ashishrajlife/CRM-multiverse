@@ -496,7 +496,7 @@ a { text-underline-offset: 3px; }
     width: 100%;
     max-width: 100%;
     height: calc(100dvh - 13rem);
-    min-height: 40rem;
+    min-height: auto;
 }
 .table-scroll-area {
     overflow: auto;
@@ -586,6 +586,67 @@ a { text-underline-offset: 3px; }
     box-shadow: none !important;
     min-width: 170px;
 }
+
+
+/* =========================================================
+   TABLE — DEFAULT 7 VISIBLE RECORDS
+   ========================================================= */
+
+.table-container.table-container--7rows {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header + 7 rows */
+.table-container--7rows > .table-scroll-area {
+    flex: 0 1 auto;
+    min-height: 0 !important;
+    max-height: calc(3.25rem + (3rem * 7));
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    scrollbar-gutter: stable;
+}
+
+/* Consistent row height */
+.table-container--7rows .premium-table tbody tr {
+    height: 3rem;
+}
+
+.table-container--7rows .premium-table tbody td {
+    height: 3rem;
+    padding: 0.4rem 1rem;
+    vertical-align: middle;
+}
+
+/* Keep table header visible */
+.table-container--7rows .premium-table thead th {
+    height: 3.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Footer stays outside scrolling area */
+.table-container--7rows > .table-footer {
+    flex-shrink: 0;
+}
+
+/* Mobile */
+@media (max-width: 767.98px) {
+    .table-container--7rows > .table-scroll-area {
+        max-height: calc(3.25rem + (3.25rem * 7));
+    }
+
+    .table-container--7rows .premium-table tbody tr,
+    .table-container--7rows .premium-table tbody td {
+        height: 3.25rem;
+    }
+}
+
 
 .table-footer {
     display: flex;
@@ -2353,7 +2414,7 @@ html, body {
     flex: 1 1 auto;
     height: auto;
     max-height: none;
-    min-height: 40rem;
+    min-height: 35rem;
 }
 .leads-page > .table-container > .table-scroll-area {
     flex: 1 1 auto;
