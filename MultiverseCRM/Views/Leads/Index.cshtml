@@ -316,16 +316,6 @@
         }
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-        <!-- Page-size selector -->
-        <select class="form-select form-select-sm" style="width:auto;"
-                onchange="window.location.href=this.value">
-            @foreach (var size in new[] { 10, 25, 50, 100 })
-            {
-                <option value="@Url.Action("Index", new { status = Model.ActiveStatus, search = Model.SearchTerm, sortBy = Model.SortBy, sortOrder = Model.SortOrder, page = 1, pageSize = size })"
-                        selected="@(Model.PageSize == size)">@size / page</option>
-            }
-        </select>
-
         @if (totalPages > 1)
         {
             var startPage = Math.Max(1, Model.Page - 2);

@@ -496,7 +496,7 @@ a { text-underline-offset: 3px; }
     width: 100%;
     max-width: 100%;
     height: calc(100dvh - 13rem);
-    min-height: 24rem;
+    min-height: 40rem;
 }
 .table-scroll-area {
     overflow: auto;
@@ -2353,7 +2353,7 @@ html, body {
     flex: 1 1 auto;
     height: auto;
     max-height: none;
-    min-height: 16rem;
+    min-height: 40rem;
 }
 .leads-page > .table-container > .table-scroll-area {
     flex: 1 1 auto;
