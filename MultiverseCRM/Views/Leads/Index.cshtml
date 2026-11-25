@@ -40,86 +40,17 @@
         return Model.SortOrder == "asc" ? "desc" : "asc";
     }
 }
+@{
+    var baseUrl = Url.Action("Index", "Leads")!;
 
-<style>
-    /* ===== Lead table styling ===== */
-    .premium-table thead th {
-        color: var(--ink) !important;
-        font-weight: 900;
-        vertical-align: middle;
-        text-align: center;
-    }
-
-    .premium-table tbody td {
-        vertical-align: middle;
-        text-align: center;
-    }
-
-    .premium-table .sticky-col-left:not(:first-child),
-    .premium-table .sticky-col-right {
-        text-align: left;
-    }
-    .premium-table .sticky-col-right { text-align: center; }
-
-    .premium-table td.sticky-col-left .d-flex {
-        text-align: left;
-    }
-
-    .premium-table thead th .form-check-input {
-        float: none;
-        margin: 0;
-    }
-
-    /* Bulk actions bar */
-    .bulk-bar {
-        display: none;
-        align-items: center;
-        gap: .75rem;
-        padding: .6rem 1rem;
-        background: rgba(248,113,113,.12);
-        border: 1px solid rgba(248,113,113,.35);
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        color: var(--ink);
-    }
-    .bulk-bar.show { display: flex; }
-    .bulk-bar .bulk-count { color: #DC2626; font-weight: 600; font-size: .9rem; }
-    [data-theme="dark"] .bulk-bar .bulk-count { color: #FCA5A5; }
-
-    /* Color swatches in modal headers */
-    .modal-icon-aqua   { background: rgba(92,209,255,.18); color: var(--aqua-deep); }
-    .modal-icon-danger { background: rgba(248,113,113,.18); color: #DC2626; }
-    .modal-icon-warning{ background: rgba(251,191,36,.20); color: #B45309; }
-    [data-theme="dark"] .modal-icon-aqua   { background: rgba(111,216,255,.20); color: var(--aqua); }
-    [data-theme="dark"] .modal-icon-danger { background: rgba(248,113,113,.20); color: #FCA5A5; }
-    [data-theme="dark"] .modal-icon-warning{ background: rgba(251,191,36,.20); color: #FDE68A; }
-    /* ===== Import result ===== */
-.imp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.1rem; }
-.imp-stat { padding: .8rem .95rem; border-radius: .9rem; border: 1px solid var(--glass-line); background: var(--glass); }
-.imp-stat .n { font-size: 1.6rem; font-weight: 800; line-height: 1.1; letter-spacing: -.03em; }
-.imp-stat .l { font-size: .75rem; font-weight: 600; color: var(--ink-soft); }
-.imp-stat.ok .n   { color: #16a34a; }
-.imp-stat.skip .n { color: #d97706; }
-.imp-stat.err .n  { color: #dc2626; }
-[data-theme="dark"] .imp-stat.ok .n   { color: #34D399; }
-[data-theme="dark"] .imp-stat.skip .n { color: #FBBF24; }
-[data-theme="dark"] .imp-stat.err .n  { color: #FCA5A5; }
-
-.imp-icon.ok   { background: rgba(52,211,153,.18);  color: #16a34a; }
-.imp-icon.warn { background: rgba(251,191,36,.20);  color: #B45309; }
-.imp-icon.fail { background: rgba(248,113,113,.18); color: #DC2626; }
-[data-theme="dark"] .imp-icon.ok   { color: #34D399; }
-[data-theme="dark"] .imp-icon.warn { color: #FDE68A; }
-[data-theme="dark"] .imp-icon.fail { color: #FCA5A5; }
-
-.imp-table thead th { position: sticky; top: 0; z-index: 1; background: var(--glass-strong); font-size: .78rem; }
-.imp-table td, .imp-table th { vertical-align: top; }
-@@media (max-width: 575.98px) { .imp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.btn-export { min-width: 7.8rem; display: inline-flex; align-items: center; justify-content: center; }
-</style>
-
+    string PageUrl(int p) =>
+        $"{baseUrl}?status={Uri.EscapeDataString(Model.ActiveStatus ?? "All")}" +
+        (string.IsNullOrEmpty(Model.SearchTerm) ? "" : $"&search={Uri.EscapeDataString(Model.SearchTerm)}") +
+        $"&sortBy={Model.SortBy}&sortOrder={Model.SortOrder}&page={p}&pageSize={Model.PageSize}";
+}
+<div class="leads-page">
 <!-- Toolbar -->
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+<div class="leads-toolbar d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div class="d-flex gap-2 flex-wrap">
         <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#addLeadModal">
             <i class="bi bi-plus-lg me-1"></i> Add Lead
@@ -143,7 +74,7 @@
         </button>  
     </div>
 
-    <form method="get" class="d-flex gap-2" style="max-width: 350px; width: 100%;">
+    <form method="get" class="leads-search d-flex gap-2" style="max-width: 350px; width: 100%;">
         <input type="hidden" name="status" value="@Model.ActiveStatus" />
         <input type="hidden" name="sortBy" value="@Model.SortBy" />
         <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
@@ -245,7 +176,7 @@
                         </a>
                     </th>
                     <th>Status</th>
-                    <th class="sticky-col-right text-center" style="min-width: 170px;">Actions</th>
+                    <th class="text-center" style="min-width: 170px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -327,8 +258,8 @@
                         <td>@AreaText(lead)</td>
                         <td><span class="pill" style="--pill:@statusColor.GetValueOrDefault(lead.Status, "#64748b")">@lead.Status</span></td>
 
-                        <td class="sticky-col-right text-center">
-                            <div class="d-inline-flex gap-1">
+                        <td class="text-center">
+                            <div class="row-actions d-inline-flex gap-1">
                                 <!-- 👁️ View details -->
                                 <button class="btn btn-sm btn-link text-info p-1 btn-view-lead"
                                         title="View full details"
@@ -374,18 +305,90 @@
             </tbody>
         </table>
     </div>
-
-    <!-- Pagination -->
-    <div class="table-footer">
-        <div class="text-muted small">Showing @(firstRow)–@(lastRow) of @Model.FilteredCount</div>
-        <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-sm btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")"
-               asp-action="Index" asp-all-route-data="Rd(Model.Page - 1)"><i class="bi bi-chevron-left"></i></a>
-            <span class="small text-muted">Page @Model.Page / @totalPages</span>
-            <a class="btn btn-sm btn-outline-secondary @(Model.Page >= totalPages ? "disabled" : "")"
-               asp-action="Index" asp-all-route-data="Rd(Model.Page + 1)"><i class="bi bi-chevron-right"></i></a>
-        </div>
+<!-- Pagination —-->
+<div class="table-footer">
+    <div class="small text-muted">
+        Showing <strong>@firstRow</strong>–<strong>@lastRow</strong>
+        of <strong>@Model.FilteredCount</strong>
+        @if (totalPages > 1)
+        {
+            <span>(page @Model.Page of @totalPages)</span>
+        }
     </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <!-- Page-size selector -->
+        <select class="form-select form-select-sm" style="width:auto;"
+                onchange="window.location.href=this.value">
+            @foreach (var size in new[] { 10, 25, 50, 100 })
+            {
+                <option value="@Url.Action("Index", new { status = Model.ActiveStatus, search = Model.SearchTerm, sortBy = Model.SortBy, sortOrder = Model.SortOrder, page = 1, pageSize = size })"
+                        selected="@(Model.PageSize == size)">@size / page</option>
+            }
+        </select>
+
+        @if (totalPages > 1)
+        {
+            var startPage = Math.Max(1, Model.Page - 2);
+            var endPage = Math.Min(totalPages, Model.Page + 2);
+
+            <nav aria-label="Leads pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@PageUrl(1)" aria-label="First">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item @(Model.Page == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@PageUrl(Model.Page - 1)" aria-label="Previous">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    @if (startPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@PageUrl(1)">1</a>
+                        </li>
+                        @if (startPage > 2)
+                        {
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        }
+                    }
+
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                            <a class="page-link" href="@PageUrl(p)">@p</a>
+                        </li>
+                    }
+
+                    @if (endPage < totalPages)
+                    {
+                        @if (endPage < totalPages - 1)
+                        {
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        }
+                        <li class="page-item">
+                            <a class="page-link" href="@PageUrl(totalPages)">@totalPages</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.Page == totalPages ? "disabled" : "")">
+                        <a class="page-link" href="@PageUrl(Model.Page + 1)" aria-label="Next">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item @(Model.Page == totalPages ? "disabled" : "")">
+                        <a class="page-link" href="@PageUrl(totalPages)" aria-label="Last">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+</div>
 </div>
 
 <!-- Import Modal -->

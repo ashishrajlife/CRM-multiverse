@@ -29,62 +29,6 @@
                 <span>@brand</span>
             </div>
 
-            <div class="lv-stage" aria-hidden="true">
-                <div class="lv-orbit">
-                    <svg class="lv-inf" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-                        <defs>
-                            <linearGradient id="lvGrad" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%"  stop-color="#9BE5FF" />
-                                <stop offset="50%" stop-color="#5CD1FF" />
-                                <stop offset="100%" stop-color="#2BB9F2" />
-                            </linearGradient>
-                        </defs>
-                        <path class="base" d="M12,62 C24,26 42,22 50,50 C58,78 76,74 88,38" />
-                        <path class="base" d="M12,38 C24,74 42,78 50,50 C58,22 76,26 88,62" />
-                        <path class="run"     d="M12,62 C24,26 42,22 50,50 C58,78 76,74 88,38" />
-                        <path class="run two" d="M12,38 C24,74 42,78 50,50 C58,22 76,26 88,62" />
-                    </svg>
-
-                    <div class="gc gc-lead">
-                        <div class="gc-row">
-                            <span class="gc-avatar">AR</span>
-                            <div>
-                                <strong>Ananya R.</strong>
-                                <small>Hot lead · ₹ 1.2 Cr</small>
-                            </div>
-                            <span class="gc-pill">New</span>
-                        </div>
-                    </div>
-
-                    <div class="gc gc-pipe">
-                        <div class="gc-title">Pipeline</div>
-                        <div class="gc-bar"><span>Qualified</span><i style="--w:64%"></i><b>64%</b></div>
-                        <div class="gc-bar"><span>Site visit</span><i style="--w:48%"></i><b>48%</b></div>
-                        <div class="gc-bar"><span>Negotiation</span><i style="--w:31%"></i><b>31%</b></div>
-                    </div>
-
-                    <div class="gc gc-visit">
-                        <div class="gc-row">
-                            <span class="gc-ico"><i class="bi bi-geo-alt-fill"></i></span>
-                            <div>
-                                <strong>Site visit booked</strong>
-                                <small>Skyline Towers · 4:30 PM</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="gc gc-follow">
-                        <div class="gc-row">
-                            <span class="gc-ico wa"><i class="bi bi-whatsapp"></i></span>
-                            <div>
-                                <strong>Follow-up sent</strong>
-                                <small>WhatsApp · 2 min ago</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="lv-copy">
                 <h2 class="lv-title">Close more deals, with less busywork.</h2>
                 <p class="lv-sub">Leads, site visits, and follow-ups in one calm workspace — built for teams that move fast.</p>
@@ -138,6 +82,304 @@
 
     <div class="toast-stack" id="toastStack"></div>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ============ Animated Earth (connected dots) ============ -->
+    <script>
+        (() => {
+            const canvas = document.getElementById('lvGlobe');
+            if (!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext('2d');
+            const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // ---- compact 180x90 land bitmap (1 bit per 2° cell) ----
+            const MW = 180, MH = 90;
+            const MASK = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf8Af/AAAAAAAAAAAAAAAAAAAAAAAA//////+AAAAAAAADgAAAAAAAAAAAABf+f///4AA+AAAAAB8AAAAAAAAAABwAz4f///wAAYAAAEAAGAAAAAAAAAAAPi/wAf//wAAAAADAAf/4AHAAAAAAAH4n38AP//gAAAAAMBD///8DAAAADwACfw3/gP//gAAA4AMH///////gAAf////59jwH/+AAAP/gA//////////8P//////h+H/gAAAf/z///////////M///////n8D8A+AA+/f///////////AP/////4g4D4AAAH9/////////////Af/////gHgA4AAAP5///////////PwAHgP///gH0AAAAAH4/////////+CMAADAB///4H+AAAAGCx/////////8A8AAAAA////n/gAAAODj/////////wA4AAAAAf///v/wAAAbP///////////AwAAAAAP/////wAAAH////////////AAAAAAAH////8YAAAB///////////9AAAAAAAD////8EAAAB///////////9AAAAAAAD////+AAAAB//5fP//////4AAAAAAAD////gAAAAPxvwPP//////jAAAAAAAD////AAAAAfib//n/////+CAAAAAAAD///+AAAAAfADf/n////+MCAAAAAAAB///8AAAAAOeRP/3/////mOAAAAAAAA///8AAAAAH+AA///////E8AAAAAAAAf//wAAAAAP/gB///////hgAAAAAAAAP//gAAAAAf/7////////gAAAAAAAAAH/gwAAAAAf////f/////gAAAAAAAAAF+AQAAAAB///+/v/////AAAAAAAAAAC+AAAAAAD/////0X////AAAAAAAAAAAeAQAAAAD////f/D///8gAAAAAAAAAAfEEAAAAH////v/B/z/QAAAAAAAAAAAPMBgAAAD////v+A/B+gAAAAAAAAAAAD8AAAAAD////34AeB/AgAAAAAAAAAAAPAAAAAH////3wAcAfggAAAAAAAAAAADAAAAAD////+AAcAfgAAAAAAAAAAAABDwAAAD////9wAMATAYAAAAAAAAAAAA//AAAB/////gAOAQAIAAAAAAAAAAAAH/gAAA/////gACAIAIAAAAAAAAAAAAH/8AAAfH///AAAAsGAAAAAAAAAAAAAH/+AAAAB//+AAAAcOAAAAAAAAAAAAAP/+AAAAB//8AAAAc+gAAAAAAAAAAAAP//gAAAD//4AAAAMeggAAAAAAAAAAAP//8AAAB//wAAAAGdg+AAAAAAAAAAAf///AAAA//wAAAACAAPkAAAAAAAAAAP///gAAA//wAAAABwAHwAAAAAAAAAAP///AAAA//wAAAAAAIDYAAAAAAAAAAH///AAAAf/wAAAAAAAAAAAAAAAAAAAD//+AAAA//wgAAAAABxAAAAAAAAAAAD//+AAAA//xgAAAAAPxgAAAAAAAAAAA//+AAAA//zgAAAAAf/gAAAAAAAAAAAf/8AAAA//DgAAAAAf/wAAAAAAAAAAAf/8AAAAf/DAAAAAD//4CAAAAAAAAAAf/4AAAAf/DAAAAAH//8AAAAAAAAAAAf/AAAAAf+CAAAAAH//8AAAAAAAAAAA//AAAAAf8AAAAAAH//+AAAAAAAAAAA/+AAAAAP8AAAAAAH//+AAAAAAAAAAA/+AAAAAH4AAAAAAD//+AAAAAAAAAAA/8AAAAAHwAAAAAADwf8AAAAAAAAAAA/4AAAAAAAAAAAAACAH4AAAAAAAAAAB/wAAAAAAAAAAAAAAAD4AEAAAAAAAAB/AAAAAAAAAAAAAAAAAAAGAAAAAAAAB+AAAAAAAAAAAAAAAAAQAMAAAAAAAAB8AAAAAAAAAAAAAAAAAQAYAAAAAAAAB4AAAAAAAAAAAAAAAAAAAwAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAA+AA//+//gAAAAAAAAAAAMAAAAAAADP/+H//////AAAAAAAAAAB+AAAAJf////8////////gAAAAAAPGB/AAAD///////////////gAAAf/////8AAAH//////////////+AABn/////+AAAH///////////////8AAE//////4ABw////////////////8AAAX//////nHg////////////////4AAAf/////////////////////////+A/4H///////////////////////////////////////////////////////////////////////////////////////';
+            const raw = atob(MASK);
+            const bytes = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+            const isLand = (latDeg, lonDeg) => {
+                const x = Math.min(MW - 1, Math.max(0, Math.floor((lonDeg + 180) / 360 * MW)));
+                const y = Math.min(MH - 1, Math.max(0, Math.floor((90 - latDeg) / 180 * MH)));
+                const i = y * MW + x;
+                return (bytes[i >> 3] >> (7 - (i & 7))) & 1;
+            };
+
+            const RAD = Math.PI / 180, TAU = Math.PI * 2;
+            const GA = Math.PI * (3 - Math.sqrt(5));
+
+            // ---- dots spread evenly over a sphere; split into land / sea ----
+            let land = [], sea = [];
+            const N = 3400;
+            for (let i = 0; i < N; i++) {
+                const y = 1 - 2 * (i + 0.5) / N;
+                const r = Math.sqrt(1 - y * y);
+                const lon = ((GA * i + Math.PI) % TAU + TAU) % TAU - Math.PI;
+                const p = { x: r * Math.sin(lon), y: y, z: r * Math.cos(lon) };
+                (isLand(Math.asin(y) / RAD, lon / RAD) ? land : sea).push(p);
+            }
+            sea = sea.filter((_, i) => i % 3 === 0);
+
+            // ---- links between neighbouring land dots ----
+            const links = [];
+            const TH2 = 0.085 * 0.085;
+            for (let i = 0; i < land.length; i++) {
+                for (let j = i + 1; j < land.length; j++) {
+                    const a = land[i], b = land[j];
+                    const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+                    if (dx * dx + dy * dy + dz * dz < TH2 && ((i * 7 + j * 13) % 100) < 62) links.push([i, j]);
+                }
+            }
+
+            // ---- hubs + great-circle arcs ----
+            const vec = (lat, lon) => {
+                const f = lat * RAD, l = lon * RAD;
+                return { x: Math.cos(f) * Math.sin(l), y: Math.sin(f), z: Math.cos(f) * Math.cos(l) };
+            };
+            const hubs = [
+                vec(19.07, 72.88),   // 0 Mumbai
+                vec(28.61, 77.21),   // 1 Delhi
+                vec(51.5, -0.12),    // 2 London
+                vec(40.71, -74.0),   // 3 New York
+                vec(25.2, 55.27),    // 4 Dubai
+                vec(1.35, 103.82),   // 5 Singapore
+                vec(35.68, 139.69),  // 6 Tokyo
+                vec(-33.87, 151.21), // 7 Sydney
+                vec(-23.55, -46.63), // 8 Sao Paulo
+                vec(-33.92, 18.42),  // 9 Cape Town
+                vec(37.77, -122.42)  // 10 San Francisco
+            ];
+            const PAIRS = [[0, 4], [0, 5], [0, 2], [1, 6], [4, 2], [2, 3], [3, 8], [3, 10], [5, 7], [6, 10], [4, 9], [0, 7]];
+            const SEG = 48;
+            const arcs = PAIRS.map((pr, k) => {
+                const A = hubs[pr[0]], B = hubs[pr[1]];
+                const d = Math.min(1, Math.max(-1, A.x * B.x + A.y * B.y + A.z * B.z));
+                const om = Math.acos(d), s = Math.sin(om);
+                const pts = [];
+                for (let i = 0; i <= SEG; i++) {
+                    const t = i / SEG;
+                    const k1 = Math.sin((1 - t) * om) / s, k2 = Math.sin(t * om) / s;
+                    const lift = 1 + 0.38 * (om / Math.PI) * Math.sin(Math.PI * t);
+                    pts.push({ x: (k1 * A.x + k2 * B.x) * lift, y: (k1 * A.y + k2 * B.y) * lift, z: (k1 * A.z + k2 * B.z) * lift });
+                }
+                return { pts, sx: new Float32Array(SEG + 1), sy: new Float32Array(SEG + 1), vis: new Uint8Array(SEG + 1),
+                         speed: 0.16 + (k % 4) * 0.035, off: (k * 0.173) % 1 };
+            });
+
+            // ---- background stars ----
+            const stars = [];
+            let seed = 7;
+            const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+            for (let i = 0; i < 46; i++) stars.push({ x: rnd(), y: rnd(), r: 0.6 + rnd() * 1.0, ph: rnd() * TAU });
+
+            // ---- per-frame buffers ----
+            const lpx = new Float32Array(land.length), lpy = new Float32Array(land.length), lpz = new Float32Array(land.length);
+            const spx = new Float32Array(sea.length),  spy = new Float32Array(sea.length),  spz = new Float32Array(sea.length);
+
+            let W = 0, H = 0, dpr = 1;
+            function resize() {
+                const r = canvas.getBoundingClientRect();
+                W = r.width; H = r.height;
+                dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.round(W * dpr);
+                canvas.height = Math.round(H * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                if (reduce && W && H) draw(0);
+            }
+
+            const TH0 = -78 * RAD;          // start with India facing the viewer
+            const TILT = 18 * RAD;
+            const cT = Math.cos(TILT), sT = Math.sin(TILT);
+
+            function draw(t) {
+                ctx.clearRect(0, 0, W, H);
+                const cx = W / 2, cy = H / 2;
+                const R = Math.min(W, H) * 0.44;
+                const th = TH0 + t * 0.16;
+                const cth = Math.cos(th), sth = Math.sin(th);
+
+                let rx = 0, ry = 0, rz = 0;
+                const P = (x, y, z) => {
+                    const x1 = x * cth + z * sth;
+                    const z1 = -x * sth + z * cth;
+                    rx = x1;
+                    ry = y * cT - z1 * sT;
+                    rz = y * sT + z1 * cT;
+                };
+
+                // stars
+                for (let i = 0; i < stars.length; i++) {
+                    const s = stars[i];
+                    ctx.globalAlpha = 0.14 + 0.28 * (0.5 + 0.5 * Math.sin(t * 0.8 + s.ph));
+                    ctx.fillStyle = '#DDEBFF';
+                    ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, TAU); ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+
+                // atmosphere glow
+                let g = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 1.7);
+                g.addColorStop(0, 'rgba(92,209,255,0.26)');
+                g.addColorStop(0.45, 'rgba(47,91,234,0.12)');
+                g.addColorStop(1, 'rgba(47,91,234,0)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(cx, cy, R * 1.7, 0, TAU); ctx.fill();
+
+                // orbit ring (back half) + satellite when behind
+                const ringRx = R * 1.3, ringRy = R * 0.42, ringRot = -0.32;
+                const sa = t * 0.45, sSin = Math.sin(sa);
+                const satX = cx + ringRx * Math.cos(sa) * Math.cos(ringRot) - ringRy * sSin * Math.sin(ringRot);
+                const satY = cy + ringRx * Math.cos(sa) * Math.sin(ringRot) + ringRy * sSin * Math.cos(ringRot);
+                const drawSat = () => {
+                    ctx.fillStyle = 'rgba(155,229,255,0.28)';
+                    ctx.beginPath(); ctx.arc(satX, satY, 7, 0, TAU); ctx.fill();
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath(); ctx.arc(satX, satY, 2.6, 0, TAU); ctx.fill();
+                };
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 7]);
+                ctx.strokeStyle = 'rgba(155,229,255,0.22)';
+                ctx.beginPath(); ctx.ellipse(cx, cy, ringRx, ringRy, ringRot, Math.PI, TAU); ctx.stroke();
+                ctx.setLineDash([]);
+                if (sSin < 0) drawSat();
+
+                // sphere body
+                g = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.05, cx, cy, R * 1.05);
+                g.addColorStop(0, 'rgba(110,170,255,0.30)');
+                g.addColorStop(0.55, 'rgba(30,58,138,0.38)');
+                g.addColorStop(1, 'rgba(6,12,40,0.62)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+
+                // rim light
+                g = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R);
+                g.addColorStop(0, 'rgba(92,209,255,0)');
+                g.addColorStop(1, 'rgba(92,209,255,0.34)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+                ctx.strokeStyle = 'rgba(155,229,255,0.38)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+
+                // project dots
+                for (let i = 0; i < land.length; i++) {
+                    const p = land[i]; P(p.x, p.y, p.z);
+                    lpx[i] = cx + R * rx; lpy[i] = cy - R * ry; lpz[i] = rz;
+                }
+                for (let i = 0; i < sea.length; i++) {
+                    const p = sea[i]; P(p.x, p.y, p.z);
+                    spx[i] = cx + R * rx; spy[i] = cy - R * ry; spz[i] = rz;
+                }
+
+                // sea dots (faint)
+                ctx.fillStyle = 'rgba(120,170,255,0.30)';
+                ctx.beginPath();
+                const sr = Math.max(0.6, R * 0.0045);
+                for (let i = 0; i < sea.length; i++) {
+                    if (spz[i] <= 0.02) continue;
+                    ctx.moveTo(spx[i] + sr, spy[i]); ctx.arc(spx[i], spy[i], sr, 0, TAU);
+                }
+                ctx.fill();
+
+                // links between land dots (3 depth buckets)
+                ctx.lineWidth = 0.6;
+                for (let b = 0; b < 3; b++) {
+                    ctx.strokeStyle = 'rgba(92,209,255,' + (0.14 + b * 0.16).toFixed(2) + ')';
+                    ctx.beginPath();
+                    for (let k = 0; k < links.length; k++) {
+                        const i = links[k][0], j = links[k][1];
+                        const z = (lpz[i] + lpz[j]) * 0.5;
+                        if (z <= 0 || Math.min(2, Math.floor(z * 3)) !== b) continue;
+                        ctx.moveTo(lpx[i], lpy[i]); ctx.lineTo(lpx[j], lpy[j]);
+                    }
+                    ctx.stroke();
+                }
+
+                // land dots (4 depth buckets)
+                for (let b = 0; b < 4; b++) {
+                    ctx.fillStyle = 'rgba(155,229,255,' + (0.35 + b * 0.22).toFixed(2) + ')';
+                    const dr = Math.max(0.8, R * (0.0058 + b * 0.0016));
+                    ctx.beginPath();
+                    for (let i = 0; i < land.length; i++) {
+                        const z = lpz[i];
+                        if (z <= 0 || Math.min(3, Math.floor(z * 4)) !== b) continue;
+                        ctx.moveTo(lpx[i] + dr, lpy[i]); ctx.arc(lpx[i], lpy[i], dr, 0, TAU);
+                    }
+                    ctx.fill();
+                }
+
+                // arcs + travelling pulses
+                for (let a = 0; a < arcs.length; a++) {
+                    const arc = arcs[a], pts = arc.pts;
+                    for (let i = 0; i <= SEG; i++) {
+                        const p = pts[i]; P(p.x, p.y, p.z);
+                        arc.sx[i] = cx + R * rx; arc.sy[i] = cy - R * ry;
+                        arc.vis[i] = (rz > 0 || rx * rx + ry * ry > 1) ? 1 : 0;
+                    }
+                    ctx.strokeStyle = 'rgba(92,209,255,0.30)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for (let i = 0; i < SEG; i++) {
+                        if (arc.vis[i] && arc.vis[i + 1]) { ctx.moveTo(arc.sx[i], arc.sy[i]); ctx.lineTo(arc.sx[i + 1], arc.sy[i + 1]); }
+                    }
+                    ctx.stroke();
+
+                    const head = ((t * arc.speed + arc.off) % 1) * SEG;
+                    const hi = Math.floor(head);
+                    ctx.lineCap = 'round';
+                    for (let k = 0; k < 12; k++) {
+                        const i = hi - k;
+                        if (i < 0 || i >= SEG || !arc.vis[i] || !arc.vis[i + 1]) continue;
+                        ctx.strokeStyle = 'rgba(230,248,255,' + (0.9 * (1 - k / 12)).toFixed(2) + ')';
+                        ctx.lineWidth = 1.8 - k * 0.07;
+                        ctx.beginPath(); ctx.moveTo(arc.sx[i], arc.sy[i]); ctx.lineTo(arc.sx[i + 1], arc.sy[i + 1]); ctx.stroke();
+                    }
+                    ctx.lineCap = 'butt';
+                    if (hi < SEG && arc.vis[hi]) {
+                        ctx.fillStyle = 'rgba(155,229,255,0.30)';
+                        ctx.beginPath(); ctx.arc(arc.sx[hi], arc.sy[hi], 5.5, 0, TAU); ctx.fill();
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.beginPath(); ctx.arc(arc.sx[hi], arc.sy[hi], 2.1, 0, TAU); ctx.fill();
+                    }
+                }
+
+                // hubs with ping rings
+                for (let h = 0; h < hubs.length; h++) {
+                    const p = hubs[h]; P(p.x, p.y, p.z);
+                    if (rz <= 0.02) continue;
+                    const x = cx + R * rx, y = cy - R * ry;
+                    const ph = (t * 0.55 + h * 0.37) % 1;
+                    ctx.strokeStyle = 'rgba(230,194,122,' + (0.6 * (1 - ph)).toFixed(2) + ')';
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath(); ctx.arc(x, y, 3 + ph * 14, 0, TAU); ctx.stroke();
+                    ctx.fillStyle = '#E6C27A';
+                    ctx.beginPath(); ctx.arc(x, y, 3.2, 0, TAU); ctx.fill();
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath(); ctx.arc(x, y, 1.3, 0, TAU); ctx.fill();
+                }
+
+                // orbit ring (front half) + satellite when in front
+                ctx.setLineDash([2, 7]);
+                ctx.strokeStyle = 'rgba(155,229,255,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.ellipse(cx, cy, ringRx, ringRy, ringRot, 0, Math.PI); ctx.stroke();
+                ctx.setLineDash([]);
+                if (sSin >= 0) drawSat();
+            }
+
+            if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas);
+            else window.addEventListener('resize', resize);
+            resize();
+
+            if (!reduce) {
+                const start = performance.now();
+                const loop = (now) => {
+                    requestAnimationFrame(loop);
+                    if (W && H) draw((now - start) / 1000);
+                };
+                requestAnimationFrame(loop);
+            }
+        })();
+    </script>
+
     <script>
         (() => {
             const form = document.getElementById('loginCard'),

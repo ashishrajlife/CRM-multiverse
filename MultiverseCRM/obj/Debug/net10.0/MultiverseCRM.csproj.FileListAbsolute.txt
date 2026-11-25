@@ -163,7 +163,6 @@ E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\scopedcss\bundle\MultiverseCRM.styles.css
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\scopedcss\projectbundle\MultiverseCRM.bundle.scp.css
-E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-pbdc1janqp-pbdc1janqp.gz
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\5k8zc524w4-{0}-61n19gt1b8-61n19gt1b8.gz
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\e8igxm55gu-{0}-xtxxf3hu2r-xtxxf3hu2r.gz
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\8kfmh0ewmm-{0}-bqjiyaj88i-bqjiyaj88i.gz
@@ -238,3 +237,4 @@ E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\refint\MultiverseCRM.dll
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.pdb
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.genruntimeconfig.cache
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\ref\MultiverseCRM.dll
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-19zrvwj3yl-19zrvwj3yl.gz
