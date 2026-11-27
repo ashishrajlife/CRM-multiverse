@@ -15,6 +15,140 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
+<style>
+    /* =========================================================
+   LOGIN — PREMIUM / ENTERPRISE POLISH  (paste at END of site.css)
+   ========================================================= */
+
+/* ---- base ---- */
+.login-page { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.login-split { min-height: 100vh; min-height: 100dvh; }
+
+/* ---- pieces that had no CSS ---- */
+.login-eyebrow {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .32rem .75rem; margin-bottom: 1.1rem;
+    border-radius: 999px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--aqua-deep);
+    background: rgba(47, 91, 234, .08);
+    border: 1px solid rgba(47, 91, 234, .18);
+}
+.caps-hint {
+    display: flex; align-items: center; gap: .4rem;
+    margin-top: .5rem; font-size: .78rem; font-weight: 600; color: #B45309;
+}
+.lv-chips { list-style: none; margin: 1.4rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .55rem; }
+.lv-chips li {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .45rem .85rem; border-radius: 999px;
+    font-size: .8rem; font-weight: 600; color: #fff;
+    background: rgba(255, 255, 255, .1);
+    border: 1px solid rgba(255, 255, 255, .2);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.lv-chips i { color: #9BE5FF; }
+
+/* ---- left visual ---- */
+.login-visual { padding: clamp(1.25rem, 2.6vw, 3.5rem); }
+.lv-brand { font-size: clamp(1.05rem, .9rem + .35vw, 1.3rem); }
+.lv-title { font-size: clamp(1.7rem, 1.1rem + 1.6vw, 2.9rem); }
+.lv-sub   { font-size: clamp(.95rem, .9rem + .2vw, 1.1rem); }
+
+/* ---- right panel ---- */
+.login-panel::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(15, 23, 42, .09) 1px, transparent 1px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(closest-side at 50% 45%, #000 20%, transparent 100%);
+    mask-image: radial-gradient(closest-side at 50% 45%, #000 20%, transparent 100%);
+}
+.login-card {
+    max-width: clamp(22rem, 28vw, 31rem);
+    border-radius: 1.5rem;
+    padding: clamp(1.6rem, 1rem + 1.8vw, 2.9rem) clamp(1.25rem, .8rem + 1.8vw, 2.6rem);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.98),
+                0 48px 100px -32px rgba(15, 23, 42, .4),
+                0 6px 16px rgba(15, 23, 42, .06);
+}
+.login-title { font-family: var(--font-display); }
+.field .form-label { font-size: .8rem; font-weight: 600; letter-spacing: .01em; color: var(--ink); }
+.field-wrap .form-control {
+    min-height: 3.3rem;
+    font-size: max(16px, 1rem);          /* iOS zoom na kare */
+    background: #F8FAFD;
+    border-color: rgba(15, 23, 42, .12);
+}
+.field-wrap .form-control:focus { background: #fff; }
+.field-wrap .form-control::placeholder { color: var(--ink-faint); }
+.pw-toggle:focus-visible { outline: 2px solid var(--aqua); outline-offset: 1px; }
+.login-btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 3.3rem; }
+.login-btn:focus-visible { outline: 3px solid rgba(47, 91, 234, .35); outline-offset: 3px; }
+.login-foot { color: var(--ink-faint); font-size: .78rem; }
+
+/* ---- short desktop screens (laptops) ---- */
+@@media (min-width: 992px) and (max-height: 700px) {
+    .lv-chips { display: none; }
+}
+
+/* ---- tablet + phone: stacked layout ---- */
+@@media (max-width: 991.98px) {
+    .login-page { background: linear-gradient(160deg, #F7F8FC 0%, #E5EAF5 100%); background-attachment: fixed; }
+    .login-visual {
+        padding: calc(1.1rem + env(safe-area-inset-top)) 1.25rem 4.75rem;
+        border-radius: 0 0 1.75rem 1.75rem;
+    }
+    .lv-brand { justify-content: center; }
+    .lv-chips { display: none; }
+    .login-panel {
+        margin-top: -3.5rem;
+        justify-content: flex-start;
+        background: transparent;
+        padding: 0 clamp(1rem, 4vw, 2rem) calc(1.5rem + env(safe-area-inset-bottom));
+        padding-left:  max(clamp(1rem, 4vw, 2rem), env(safe-area-inset-left));
+        padding-right: max(clamp(1rem, 4vw, 2rem), env(safe-area-inset-right));
+    }
+    .login-panel::before { display: none; }
+    .login-card { max-width: 32rem; }
+}
+
+/* ---- phones ---- */
+@@media (max-width: 575.98px) {
+    .lv-orbit { width: min(100%, 10rem); }
+    .login-visual { padding-bottom: 4.25rem; }
+    .login-card { padding: 1.6rem 1.25rem; border-radius: 1.35rem; }
+    .login-sub { margin-bottom: 1.4rem; }
+}
+@@media (max-width: 575.98px) and (max-height: 700px) {
+    .lv-stage { display: none; }                 /* iPhone SE / chhoti screens */
+    .login-visual { padding-bottom: 3.75rem; }
+}
+@@media (max-width: 359.98px) {
+    .login-card { padding: 1.35rem 1.05rem; }
+    .login-title { font-size: 1.4rem; }
+    .login-eyebrow { font-size: .66rem; }
+}
+
+/* ---- phones in landscape: side-by-side ---- */
+@@media (max-height: 520px) and (orientation: landscape) and (max-width: 991.98px) {
+    .login-split { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); grid-template-rows: auto; }
+    .login-visual { padding: 1rem; justify-content: center; border-radius: 0; }
+    .lv-stage, .lv-copy { display: none; }
+    .login-panel {
+        margin-top: 0; justify-content: center; padding-block: 1rem;
+        background: linear-gradient(160deg, #F7F8FC 0%, #E5EAF5 100%);
+    }
+    .login-card { padding: 1.1rem 1.4rem; }
+    .login-sub { display: none; }
+    .field { margin-bottom: .7rem; }
+    .login-foot { display: none; }
+}
+
+/* ---- reduced motion ---- */
+@@media (prefers-reduced-motion: reduce) {
+    .login-card, .login-visual::after, .gc { animation: none !important; }
+}
+</style>
 <body class="login-page">
     <main class="login-split" aria-label="Sign in to @brand">
 
@@ -28,7 +162,11 @@
                 </span>
                 <span>@brand</span>
             </div>
-
+<div class="lv-stage" aria-hidden="true">
+    <div class="lv-orbit">
+        <canvas class="lv-globe" id="lvGlobe"></canvas>
+    </div>
+</div>
             <div class="lv-copy">
                 <h2 class="lv-title">Close more deals, with less busywork.</h2>
                 <p class="lv-sub">Leads, site visits, and follow-ups in one calm workspace — built for teams that move fast.</p>
