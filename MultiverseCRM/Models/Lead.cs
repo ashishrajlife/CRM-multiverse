@@ -70,5 +70,9 @@ public class Lead
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    public int? ProjectId { get; set; }
+    public Project? ProjectEntity { get; set; }
+
     public ICollection<Property> PropertiesBooked { get; set; } = new List<Property>();
+    
 }

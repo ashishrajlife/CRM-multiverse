@@ -59,14 +59,6 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRm9sbG93VXBzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[E:/CRM-multiverse/MultiverseCRM/Views/Home/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
-build_metadata.AdditionalFiles.CssScope = 
-
-[E:/CRM-multiverse/MultiverseCRM/Views/Home/Privacy.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
-build_metadata.AdditionalFiles.CssScope = 
-
 [E:/CRM-multiverse/MultiverseCRM/Views/Leads/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTGVhZHNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -125,6 +117,18 @@ build_metadata.AdditionalFiles.CssScope =
 
 [E:/CRM-multiverse/MultiverseCRM/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/CRM-multiverse/MultiverseCRM/Views/Shared/_MatchingLeadsPanel.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9NYXRjaGluZ0xlYWRzUGFuZWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/CRM-multiverse/MultiverseCRM/Views/Shared/_MatchingPropertiesPanel.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9NYXRjaGluZ1Byb3BlcnRpZXNQYW5lbC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/CRM-multiverse/MultiverseCRM/Views/Shared/_ProjectComboBox.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Qcm9qZWN0Q29tYm9Cb3guY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [E:/CRM-multiverse/MultiverseCRM/Views/Shared/_ValidationScriptsPartial.cshtml]

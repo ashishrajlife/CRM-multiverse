@@ -63,6 +63,7 @@ public class PropertyDetailViewModel
     public Property Property { get; set; } = null!;
     public Project? Project { get; set; }
     public List<PropertyImage> Images { get; set; } = new();
+    public List<LeadMatch> MatchingLeads { get; set; } = new();   // ← new
 }
 
 public class PropertyCreateViewModel

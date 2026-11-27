@@ -426,13 +426,6 @@ public class ProjectsController : Controller
             }
         }
 
-        // ─── Reset hero if requested ───────────────────────
-        if (vm.NewHeroImageId.HasValue)
-        {
-            foreach (var img in existingImages)
-                img.IsHero = (img.Id == vm.NewHeroImageId.Value);
-        }
-
         // ─── Update hero path on project ───────────────────
         // (will be set after SaveChanges if needed)
         // Simplification: keep existing hero path or set first image

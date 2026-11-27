@@ -15,17 +15,19 @@ public class LeadsController : Controller
     private readonly ILeadImportExportService _importExport;
     private readonly IActivityLogger _activity;
     private readonly INotificationService _notifications;
-
+    private readonly IPropertyMatchService _matchService;
     public LeadsController(
         AppDbContext context,
         ILeadImportExportService importExport,
         IActivityLogger activity,
-        INotificationService notifications)
+        INotificationService notifications,
+        IPropertyMatchService matchService) 
     {
         _context = context;
         _importExport = importExport;
         _activity = activity;
         _notifications = notifications;
+        _matchService = matchService;
     }
 
     private string CurrentUserName =>
@@ -117,6 +119,7 @@ public class LeadsController : Controller
         var statusCounts = await _context.Leads.GroupBy(l => l.Status)
             .Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Count);
+            
 
         var vm = new LeadListViewModel
         {
@@ -133,6 +136,14 @@ public class LeadsController : Controller
             Leads = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync()
         };
 
+        var projectOptions = await _context.Projects.AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Name)
+            .Select(p => new ProjectOption { Id = p.Id, Name = p.Name })
+            .ToListAsync();
+
+        vm.AvailableProjects = projectOptions;
+
         return View(vm);
     }
 
@@ -140,9 +151,18 @@ public class LeadsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Lead lead)
     {
-        lead.Id = 0;                                   // never trust an Id from the form
-        lead.Phone = CleanPhone(lead.Phone);           // same cleaning as Edit / Import
+        lead.Id = 0;
+        lead.Phone = CleanPhone(lead.Phone);
         lead.AltPhone = string.IsNullOrWhiteSpace(lead.AltPhone) ? null : CleanPhone(lead.AltPhone);
+
+        // Handle project — if ProjectId set, sync Project name from entity
+        if (lead.ProjectId.HasValue)
+        {
+            var project = await _context.Projects.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == lead.ProjectId.Value);
+            if (project != null)
+                lead.Project = project.Name;
+        }
 
         if (lead.Phone.Length != 10)
             ModelState.AddModelError(nameof(lead.Phone), "Enter a valid 10-digit phone number.");
@@ -161,12 +181,12 @@ public class LeadsController : Controller
                 detail: $"Phone: {lead.Phone} · Status: {lead.Status ?? "-"}",
                 url: Url.Action("Index", "Leads"), entityId: lead.Id);
 
-            // ── Notification: broadcast new lead ─────────────────
+            // Notifications (as-is)
             try
             {
                 await _notifications.PushAsync(new Notification
                 {
-                    UserName = null,                        // broadcast to all users
+                    UserName = null,
                     Category = NotificationCategory.Lead,
                     Type = NotificationType.Created,
                     Title = $"New lead: {lead.FullName}",
@@ -177,7 +197,6 @@ public class LeadsController : Controller
                     ActorName = CurrentUserDisplay
                 });
 
-                // Notify assigned staff directly if any
                 if (!string.IsNullOrWhiteSpace(lead.Staff))
                 {
                     await _notifications.PushAsync(new Notification
@@ -195,14 +214,25 @@ public class LeadsController : Controller
                     });
                 }
             }
-            catch { /* never block the main flow */ }
+            catch { }
+
+            // ✨ NEW — compute matching properties
+            try
+            {
+                var matches = await _matchService.MatchLeadToPropertiesAsync(lead.Id, 5);
+                TempData["LeadId"] = lead.Id;
+                TempData["MatchCount"] = matches.Count;
+                TempData["StrongMatches"] = matches.Count(m => m.Score >= 80);
+            }
+            catch { /* never break the flow */ }
 
             TempData["Success"] = "Lead created successfully!";
         }
         else
         {
             TempData["Error"] = ModelState.Values.SelectMany(v => v.Errors)
-                                    .Select(e => e.ErrorMessage).FirstOrDefault(m => !string.IsNullOrEmpty(m))
+                                    .Select(e => e.ErrorMessage)
+                                    .FirstOrDefault(m => !string.IsNullOrEmpty(m))
                                 ?? "Please fill all required fields correctly.";
         }
         return RedirectToAction(nameof(Index));
@@ -270,6 +300,19 @@ public class LeadsController : Controller
             existing.CustomerType = lead.CustomerType;
             existing.CustomerCategory = lead.CustomerCategory;
             existing.UpdatedAt = DateTime.UtcNow;
+
+            if (lead.ProjectId.HasValue)
+            {
+                var project = await _context.Projects.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == lead.ProjectId.Value);
+                existing.ProjectId = lead.ProjectId;
+                existing.Project = project?.Name ?? lead.Project;
+            }
+            else
+            {
+                existing.ProjectId = null;
+                existing.Project = lead.Project;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -576,5 +619,12 @@ public class LeadsController : Controller
         }
 
         return Json(vm);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> MatchesPanel(int leadId, CancellationToken ct)
+    {
+        var vm = await _matchService.GetLeadMatchesPanelAsync(leadId, ct);
+        return PartialView("_MatchingPropertiesPanel", vm);
     }
 }

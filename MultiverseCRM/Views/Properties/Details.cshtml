@@ -3,164 +3,718 @@
     ViewData["Title"] = $"{Model.Property.UnitNumber} — Property";
     var p = Model.Property;
     var heroImg = Model.Images.FirstOrDefault(i => i.IsHero) ?? Model.Images.FirstOrDefault();
+    var otherImages = Model.Images.Where(i => i != heroImg).ToList();
+
+    var statusClass = p.Status switch
+    {
+        "Available" => "pd-status-success",
+        "Booked"    => "pd-status-warning",
+        "Sold"      => "pd-status-danger",
+        _           => "pd-status-muted"
+    };
+
+    var matchVm = new MultiverseCRM.ViewModels.MatchingPanelViewModel
+    {
+        Context = "property",
+        ContextId = Model.Property.Id,
+        TotalMatches = Model.MatchingLeads.Count,
+        StrongMatches = Model.MatchingLeads.Count(x => x.Score >= 80),
+        GoodMatches = Model.MatchingLeads.Count(x => x.Score >= 60),
+        Leads = Model.MatchingLeads
+    };
 }
 
-<div class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-2">
-    <div>
-        <a asp-action="Index" class="text-decoration-none small text-muted">
-            <i class="bi bi-arrow-left me-1"></i>Back to Properties
-        </a>
-        <h3 class="fw-bold mb-1 mt-1">@p.UnitNumber — @(p.Title ?? "Property")</h3>
-        <p class="text-muted mb-0">
-            @if (Model.Project != null)
-            {
-                <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id" class="text-decoration-none me-2">
-                    <i class="bi bi-building me-1"></i>@Model.Project.Name
-                </a>
-            }
-            <i class="bi bi-geo-alt me-1"></i>@(p.Location ?? "")@(p.City != null ? ", " + p.City : "")
-            <span class="badge @(p.Status switch {
-                "Available" => "bg-success",
-                "Booked" => "bg-warning text-dark",
-                "Sold" => "bg-danger",
-                _ => "bg-secondary"
-            }) ms-2">@p.Status</span>
-        </p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-        <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">
-            <i class="bi bi-pencil me-1"></i>Edit
-        </a>
-        <form asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-inline"
-              onsubmit="return confirm('Delete @p.UnitNumber?');">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash me-1"></i>Delete
-            </button>
-        </form>
-    </div>
-</div>
+<style>
+    /* ═══ Page shell ═══════════════════════════════════════ */
+    .pd-page {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
 
-<div class="row g-3 g-lg-4">
-    <div class="col-lg-8">
-        @if (heroImg != null)
-        {
-            <div class="card border-0 shadow-sm mb-3 overflow-hidden">
-                <img src="~/@heroImg.FilePath" alt="@p.UnitNumber" class="img-fluid w-100" style="max-height: 480px; object-fit: cover;" />
+    /* ═══ Page header ══════════════════════════════════════ */
+    .pd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .pd-header-main { min-width: 0; }
+    .pd-back-link {
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        margin-bottom: .5rem;
+    }
+    .pd-back-link:hover { color: var(--ink); }
+    .pd-title {
+        font-size: 1.65rem;
+        font-weight: 800;
+        letter-spacing: -.025em;
+        color: var(--ink);
+        line-height: 1.2;
+        margin-bottom: .4rem;
+    }
+    .pd-title-sub {
+        font-size: .92rem;
+        color: var(--ink-soft);
+        font-weight: 500;
+    }
+    .pd-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .5rem .85rem;
+        margin-top: .55rem;
+        font-size: .875rem;
+        color: var(--ink-soft);
+    }
+    .pd-meta-row a {
+        text-decoration: none;
+        font-weight: 600;
+        color: var(--aqua-deep);
+    }
+    .pd-meta-row a:hover { text-decoration: underline; }
+
+    .pd-status {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .28rem .75rem;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+    .pd-status::before {
+        content: "";
+        width: .5rem; height: .5rem;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    .pd-status-success { color: #15803d; background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.30); }
+    .pd-status-warning { color: #b45309; background: rgba(245,158,11,.14); border-color: rgba(245,158,11,.35); }
+    .pd-status-danger  { color: #b91c1c; background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.30); }
+    .pd-status-muted   { color: #475569; background: rgba(100,116,139,.12); border-color: rgba(100,116,139,.30); }
+    [data-theme="dark"] .pd-status-success { color: #86efac; }
+    [data-theme="dark"] .pd-status-warning { color: #fde68a; }
+    [data-theme="dark"] .pd-status-danger  { color: #fca5a5; }
+    [data-theme="dark"] .pd-status-muted   { color: #cbd5e1; }
+
+    .pd-actions {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+    }
+    .pd-actions .btn {
+        min-width: 5.5rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ═══ Quick stats strip ═════════════════════════════════ */
+    .pd-stats-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+        gap: .75rem;
+        margin-bottom: 1.5rem;
+    }
+    .pd-stat-card {
+        background: var(--glass);
+        border: 1px solid var(--glass-line);
+        border-radius: 14px;
+        padding: .9rem 1.1rem;
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .pd-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15,23,42,.08);
+    }
+    .pd-stat-card .lbl {
+        font-size: .72rem;
+        font-weight: 700;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+    .pd-stat-card .val {
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -.02em;
+        color: var(--ink);
+        line-height: 1.15;
+    }
+    .pd-stat-card.price .val { color: #16a34a; }
+    [data-theme="dark"] .pd-stat-card.price .val { color: #34d399; }
+
+    /* ═══ Main layout columns ═══════════════════════════════ */
+    .pd-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+        gap: 1.5rem;
+        align-items: start;
+    }
+    @@media (max-width: 991.98px) {
+        .pd-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ═══ Cards ═════════════════════════════════════════════ */
+    .pd-card {
+        background: var(--glass);
+        border: 1px solid var(--glass-line);
+        border-radius: 16px;
+        box-shadow: 0 4px 14px rgba(15,23,42,.05);
+        overflow: hidden;
+    }
+    .pd-card + .pd-card { margin-top: 1rem; }
+    .pd-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .65rem;
+        padding: .9rem 1.15rem;
+        border-bottom: 1px solid var(--glass-line);
+        background: rgba(15,23,42,.02);
+    }
+    [data-theme="dark"] .pd-card-header {
+        background: rgba(255,255,255,.02);
+    }
+    .pd-card-title {
+        font-size: .82rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--ink);
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        margin: 0;
+    }
+    .pd-card-title i { color: var(--aqua-deep); font-size: .95rem; }
+    .pd-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.65rem;
+        height: 1.65rem;
+        padding: 0 .5rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 800;
+        background: rgba(92,209,255,.18);
+        color: var(--aqua-deep);
+    }
+    .pd-card-body { padding: 1.15rem 1.25rem; }
+
+    /* ═══ Hero + gallery viewer ═════════════════════════════ */
+    .pd-viewer {
+        background: var(--glass);
+        border: 1px solid var(--glass-line);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(15,23,42,.05);
+    }
+    .pd-main-image {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: linear-gradient(135deg, #E0E7FF, #C7D2FE);
+        overflow: hidden;
+    }
+    [data-theme="dark"] .pd-main-image {
+        background: linear-gradient(135deg, #1E293B, #334155);
+    }
+    .pd-main-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: opacity .2s ease;
+    }
+    .pd-main-image .pd-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--ink-soft);
+        gap: .5rem;
+    }
+    .pd-main-image .pd-empty i { font-size: 3.5rem; opacity: .4; }
+    .pd-hero-badge {
+        position: absolute;
+        top: .75rem;
+        left: .75rem;
+        background: rgba(245,158,11,.95);
+        color: #fff;
+        padding: .28rem .7rem;
+        border-radius: 999px;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .03em;
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        box-shadow: 0 4px 12px rgba(245,158,11,.35);
+    }
+
+    /* Thumbnail strip */
+    .pd-thumb-strip {
+        display: flex;
+        gap: .55rem;
+        padding: .75rem;
+        overflow-x: auto;
+        background: rgba(15,23,42,.02);
+        border-top: 1px solid var(--glass-line);
+        scrollbar-width: thin;
+    }
+    [data-theme="dark"] .pd-thumb-strip {
+        background: rgba(255,255,255,.02);
+    }
+    .pd-thumb-strip::-webkit-scrollbar { height: 6px; }
+    .pd-thumb-strip::-webkit-scrollbar-thumb {
+        background: rgba(30,58,138,.25);
+        border-radius: 3px;
+    }
+    .pd-thumb {
+        flex-shrink: 0;
+        width: 5.5rem;
+        height: 4rem;
+        border-radius: .55rem;
+        overflow: hidden;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: transform .15s ease, border-color .15s ease;
+        background: rgba(15,23,42,.05);
+        position: relative;
+    }
+    .pd-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .pd-thumb:hover {
+        transform: translateY(-2px);
+    }
+    .pd-thumb.active {
+        border-color: var(--aqua);
+        box-shadow: 0 0 0 3px rgba(92,209,255,.2);
+    }
+    .pd-thumb .pd-thumb-hero {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 50%;
+        background: rgba(245,158,11,.95);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .55rem;
+    }
+
+    /* ═══ Details list ═════════════════════════════════════ */
+    .pd-details-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .pd-details-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        padding: .65rem 0;
+        border-bottom: 1px dashed var(--glass-line);
+    }
+    .pd-details-list li:last-child { border-bottom: 0; }
+    .pd-details-list .lbl {
+        font-size: .82rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        flex-shrink: 0;
+    }
+    .pd-details-list .val {
+        font-size: .92rem;
+        font-weight: 700;
+        color: var(--ink);
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+    .pd-details-list .val.highlight {
+        color: #16a34a;
+        font-size: 1rem;
+    }
+    [data-theme="dark"] .pd-details-list .val.highlight { color: #34d399; }
+
+    /* ═══ Owner block ══════════════════════════════════════ */
+    .pd-owner-block {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .pd-owner-avatar {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        background: linear-gradient(135deg, rgba(92,209,255,.18), rgba(92,209,255,.08));
+        color: var(--aqua-deep);
+    }
+    .pd-owner-info { flex: 1; min-width: 0; }
+    .pd-owner-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--ink);
+        margin-bottom: .15rem;
+    }
+    .pd-owner-phone {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .88rem;
+        font-weight: 600;
+        color: var(--aqua-deep);
+        text-decoration: none;
+    }
+    .pd-owner-phone:hover { text-decoration: underline; }
+
+    /* ═══ Notes ════════════════════════════════════════════ */
+    .pd-notes {
+        white-space: pre-line;
+        color: var(--ink-soft);
+        line-height: 1.7;
+        font-size: .92rem;
+        margin: 0;
+    }
+
+    /* ═══ Empty states ═════════════════════════════════════ */
+    .pd-empty-state {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--ink-soft);
+    }
+    .pd-empty-state i {
+        font-size: 2.5rem;
+        opacity: .4;
+        display: block;
+        margin-bottom: .75rem;
+    }
+    .pd-empty-state p { margin: 0; font-size: .9rem; }
+
+    /* ═══ Mobile tweaks ════════════════════════════════════ */
+    @@media (max-width: 575.98px) {
+        .pd-title { font-size: 1.35rem; }
+        .pd-actions { width: 100%; }
+        .pd-actions .btn { flex: 1 1 0; }
+        .pd-stat-card .val { font-size: 1.1rem; }
+        .pd-thumb { width: 4.5rem; height: 3.25rem; }
+    }
+</style>
+
+<div class="pd-page">
+
+    <!-- ═══ Header ═══════════════════════════════════════ -->
+    <div class="pd-header">
+        <div class="pd-header-main">
+            <a asp-action="Index" class="pd-back-link">
+                <i class="bi bi-arrow-left"></i>Back to Properties
+            </a>
+            <h1 class="pd-title">@p.UnitNumber @(string.IsNullOrEmpty(p.Title) ? "" : "— " + p.Title)</h1>
+            <div class="pd-meta-row">
+                @if (Model.Project != null)
+                {
+                    <a asp-controller="Projects" asp-action="Details" asp-route-id="@Model.Project.Id">
+                        <i class="bi bi-building me-1"></i>@Model.Project.Name
+                    </a>
+                }
+                <span>
+                    <i class="bi bi-geo-alt me-1"></i>@(p.Location ?? "")@(p.City != null ? (string.IsNullOrEmpty(p.Location) ? "" : ", ") + p.City : "")
+                </span>
+                <span class="pd-status @statusClass">@p.Status</span>
             </div>
-        }
+        </div>
+        <div class="pd-actions">
+            <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <form asp-action="Delete" asp-route-id="@p.Id" method="post"
+                  onsubmit="return confirm('Delete @(p.UnitNumber)?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </form>
+        </div>
+    </div>
 
-        @if (Model.Images.Count > 1)
-        {
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Gallery</h6>
-                    <div class="row g-2">
-                        @foreach (var img in Model.Images.Where(i => i != heroImg))
+    <!-- ═══ Stats strip ═══════════════════════════════════ -->
+    @if (p.TotalPrice.HasValue || !string.IsNullOrEmpty(p.BHK) || p.CarpetArea.HasValue || p.FloorNumber.HasValue)
+    {
+        <div class="pd-stats-strip">
+            @if (p.TotalPrice.HasValue)
+            {
+                <div class="pd-stat-card price">
+                    <span class="lbl">Total Price</span>
+                    <span class="val">₹@p.TotalPrice.Value.ToString("N0")</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(p.BHK))
+            {
+                <div class="pd-stat-card">
+                    <span class="lbl">BHK</span>
+                    <span class="val">@p.BHK</span>
+                </div>
+            }
+            @if (p.CarpetArea.HasValue)
+            {
+                <div class="pd-stat-card">
+                    <span class="lbl">Carpet Area</span>
+                    <span class="val">@p.CarpetArea.Value.ToString("N0") @p.AreaUnit</span>
+                </div>
+            }
+            @if (p.FloorNumber.HasValue)
+            {
+                <div class="pd-stat-card">
+                    <span class="lbl">Floor</span>
+                    <span class="val">@p.FloorNumber @(p.TotalFloors.HasValue ? $" of {p.TotalFloors}" : "")</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(p.Furnished))
+            {
+                <div class="pd-stat-card">
+                    <span class="lbl">Furnished</span>
+                    <span class="val" style="font-size:1rem;">@p.Furnished</span>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ═══ Main layout ═══════════════════════════════════ -->
+    <div class="pd-layout">
+
+        <!-- LEFT COLUMN — images + notes -->
+        <div class="pd-col-main">
+
+            <!-- Image viewer (hero + thumbnails) -->
+            <div class="pd-viewer">
+                <div class="pd-main-image" id="pdMainImage">
+                    @if (heroImg != null)
+                    {
+                        <img src="~/@heroImg.FilePath" alt="@p.UnitNumber" id="pdHeroImg" />
+                    }
+                    else
+                    {
+                        <div class="pd-empty">
+                            <i class="bi bi-image"></i>
+                            <span class="text-muted small">No images available</span>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.Images.Any())
+                {
+                    <div class="pd-thumb-strip" id="pdThumbStrip">
+                        @foreach (var img in Model.Images)
                         {
-                            <div class="col-4 col-md-3">
-                                <img src="~/@img.FilePath" alt="@img.Caption" loading="lazy"
-                                     class="img-fluid rounded" style="aspect-ratio:1; object-fit:cover; cursor:pointer;"
-                                     onclick="window.open('@Url.Content("~/" + img.FilePath)', '_blank')" />
+                            <div class="pd-thumb @(img == heroImg ? "active" : "")"
+                                 data-img-src="@Url.Content("~/" + img.FilePath)"
+                                 data-img-alt="@(img.Caption ?? p.UnitNumber)">
+                                <img src="~/@img.FilePath" alt="@img.Caption" loading="lazy" />
                             </div>
                         }
                     </div>
-                </div>
+                }
             </div>
-        }
 
-        @if (!string.IsNullOrWhiteSpace(p.Notes))
-        {
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Notes</h6>
-                    <p class="text-muted mb-0" style="white-space: pre-line;">@p.Notes</p>
+            <!-- Notes -->
+            @if (!string.IsNullOrWhiteSpace(p.Notes))
+            {
+                <div class="pd-card">
+                    <div class="pd-card-header">
+                        <h3 class="pd-card-title">
+                            <i class="bi bi-journal-text"></i>Notes
+                        </h3>
+                    </div>
+                    <div class="pd-card-body">
+                        <p class="pd-notes">@p.Notes</p>
+                    </div>
                 </div>
-            </div>
-        }
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body">
-                <h6 class="fw-bold mb-3">Property Details</h6>
-                <dl class="row mb-0 small">
-                    @if (!string.IsNullOrEmpty(p.PropertyType))
-                    {
-                        <dt class="col-5 text-muted">Type</dt>
-                        <dd class="col-7 fw-semibold">@p.PropertyType</dd>
-                    }
-                    @if (!string.IsNullOrEmpty(p.BHK))
-                    {
-                        <dt class="col-5 text-muted">BHK</dt>
-                        <dd class="col-7">@p.BHK</dd>
-                    }
-                    @if (!string.IsNullOrEmpty(p.Furnished))
-                    {
-                        <dt class="col-5 text-muted">Furnished</dt>
-                        <dd class="col-7">@p.Furnished</dd>
-                    }
-                    @if (!string.IsNullOrEmpty(p.Facing))
-                    {
-                        <dt class="col-5 text-muted">Facing</dt>
-                        <dd class="col-7">@p.Facing</dd>
-                    }
-                    @if (p.FloorNumber.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Floor</dt>
-                        <dd class="col-7">@p.FloorNumber @(p.TotalFloors.HasValue ? $"/ {p.TotalFloors}" : "")</dd>
-                    }
-                    @if (p.CarpetArea.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Carpet</dt>
-                        <dd class="col-7">@p.CarpetArea.Value.ToString("N0") @p.AreaUnit</dd>
-                    }
-                    @if (p.BuiltUpArea.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Built-up</dt>
-                        <dd class="col-7">@p.BuiltUpArea.Value.ToString("N0") @p.AreaUnit</dd>
-                    }
-                    @if (p.SuperBuiltUpArea.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Super Built-up</dt>
-                        <dd class="col-7">@p.SuperBuiltUpArea.Value.ToString("N0") @p.AreaUnit</dd>
-                    }
-                    @if (p.BasePrice.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Base Price</dt>
-                        <dd class="col-7">₹@p.BasePrice.Value.ToString("N0")</dd>
-                    }
-                    @if (p.TotalPrice.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Total Price</dt>
-                        <dd class="col-7 fw-bold text-success">₹@p.TotalPrice.Value.ToString("N0")</dd>
-                    }
-                    @if (p.PricePerSqft.HasValue)
-                    {
-                        <dt class="col-5 text-muted">Price/sqft</dt>
-                        <dd class="col-7">₹@p.PricePerSqft.Value.ToString("N0")</dd>
-                    }
-                </dl>
-            </div>
+            }
         </div>
 
-        @if (!string.IsNullOrEmpty(p.OwnerName) || !string.IsNullOrEmpty(p.OwnerPhone))
-        {
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">Owner</h6>
-                    @if (!string.IsNullOrEmpty(p.OwnerName))
+        <!-- RIGHT COLUMN — details, owner, matching leads -->
+        <div class="pd-col-side">
+
+            <!-- Property Details -->
+            <div class="pd-card">
+                <div class="pd-card-header">
+                    <h3 class="pd-card-title">
+                        <i class="bi bi-info-circle"></i>Property Details
+                    </h3>
+                </div>
+                <div class="pd-card-body">
+                    <ul class="pd-details-list">
+                        @if (!string.IsNullOrEmpty(p.PropertyType))
+                        {
+                            <li><span class="lbl">Type</span><span class="val">@p.PropertyType</span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(p.BHK))
+                        {
+                            <li><span class="lbl">BHK</span><span class="val">@p.BHK</span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(p.Furnished))
+                        {
+                            <li><span class="lbl">Furnished</span><span class="val">@p.Furnished</span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(p.Facing))
+                        {
+                            <li><span class="lbl">Facing</span><span class="val">@p.Facing</span></li>
+                        }
+                        @if (p.FloorNumber.HasValue)
+                        {
+                            <li><span class="lbl">Floor</span><span class="val">@p.FloorNumber @(p.TotalFloors.HasValue ? $"/ {p.TotalFloors}" : "")</span></li>
+                        }
+                        @if (p.CarpetArea.HasValue)
+                        {
+                            <li><span class="lbl">Carpet Area</span><span class="val">@p.CarpetArea.Value.ToString("N0") @p.AreaUnit</span></li>
+                        }
+                        @if (p.BuiltUpArea.HasValue)
+                        {
+                            <li><span class="lbl">Built-up Area</span><span class="val">@p.BuiltUpArea.Value.ToString("N0") @p.AreaUnit</span></li>
+                        }
+                        @if (p.SuperBuiltUpArea.HasValue)
+                        {
+                            <li><span class="lbl">Super Built-up</span><span class="val">@p.SuperBuiltUpArea.Value.ToString("N0") @p.AreaUnit</span></li>
+                        }
+                        @if (p.BasePrice.HasValue)
+                        {
+                            <li><span class="lbl">Base Price</span><span class="val">₹@p.BasePrice.Value.ToString("N0")</span></li>
+                        }
+                        @if (p.PricePerSqft.HasValue)
+                        {
+                            <li><span class="lbl">Price per sqft</span><span class="val">₹@p.PricePerSqft.Value.ToString("N0")</span></li>
+                        }
+                        @if (p.TotalPrice.HasValue)
+                        {
+                            <li><span class="lbl">Total Price</span><span class="val highlight">₹@p.TotalPrice.Value.ToString("N0")</span></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Owner -->
+            @if (!string.IsNullOrEmpty(p.OwnerName) || !string.IsNullOrEmpty(p.OwnerPhone))
+            {
+                <div class="pd-card">
+                    <div class="pd-card-header">
+                        <h3 class="pd-card-title">
+                            <i class="bi bi-person-badge"></i>Owner
+                        </h3>
+                    </div>
+                    <div class="pd-card-body">
+                        <div class="pd-owner-block">
+                            <div class="pd-owner-avatar">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <div class="pd-owner-info">
+                                @if (!string.IsNullOrEmpty(p.OwnerName))
+                                {
+                                    <div class="pd-owner-name">@p.OwnerName</div>
+                                }
+                                @if (!string.IsNullOrEmpty(p.OwnerPhone))
+                                {
+                                    <a href="tel:@p.OwnerPhone" class="pd-owner-phone">
+                                        <i class="bi bi-telephone"></i>@p.OwnerPhone
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Matching Leads -->
+            <div class="pd-card">
+                <div class="pd-card-header">
+                    <h3 class="pd-card-title">
+                        <i class="bi bi-people-fill"></i>Matching Leads
+                    </h3>
+                    @if (Model.MatchingLeads.Any())
                     {
-                        <div class="fw-semibold">@p.OwnerName</div>
+                        <span class="pd-count-badge">@Model.MatchingLeads.Count</span>
                     }
-                    @if (!string.IsNullOrEmpty(p.OwnerPhone))
+                </div>
+                <div class="pd-card-body" style="padding: 0.75rem;">
+                    @if (Model.MatchingLeads.Any())
                     {
-                        <a href="tel:@p.OwnerPhone" class="text-decoration-none">
-                            <i class="bi bi-telephone me-1"></i>@p.OwnerPhone
-                        </a>
+                        <partial name="_MatchingLeadsPanel" model="matchVm" />
+                    }
+                    else
+                    {
+                        <div class="pd-empty-state">
+                            <i class="bi bi-people"></i>
+                            <p>No matching leads yet</p>
+                            <small class="text-muted d-block mt-1">
+                                Lead matching will appear here when a lead's requirements align
+                            </small>
+                        </div>
                     }
                 </div>
             </div>
-        }
+        </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    // ═══ Thumbnail click → swap hero image ═════════════════
+    const mainImg = document.getElementById('pdHeroImg');
+    const mainWrap = document.getElementById('pdMainImage');
+    const strip = document.getElementById('pdThumbStrip');
+
+    if (mainImg && strip) {
+        strip.addEventListener('click', function (e) {
+            const thumb = e.target.closest('.pd-thumb');
+            if (!thumb) return;
+
+            const newSrc = thumb.dataset.imgSrc;
+            const newAlt = thumb.dataset.imgAlt;
+            if (!newSrc) return;
+
+            // Fade out, swap, fade in
+            mainImg.style.opacity = '0';
+            setTimeout(() => {
+                mainImg.src = newSrc;
+                mainImg.alt = newAlt || '';
+                mainImg.style.opacity = '1';
+            }, 120);
+
+            // Update active state
+            strip.querySelectorAll('.pd-thumb').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+        });
+    }
+})();
+</script>
+}

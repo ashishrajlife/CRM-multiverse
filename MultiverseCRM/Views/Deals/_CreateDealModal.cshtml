@@ -16,11 +16,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form asp-action="Create" method="post" class="deal-form d-flex flex-column" style="min-height:0; flex:1 1 auto; overflow:hidden;">
+         <form asp-action="Create" method="post" class="deal-form">
                 @Html.AntiForgeryToken()
-
-                  <div class="modal-body deal-modal-body" style="overflow-y:auto; min-height:0; flex:1 1 auto;">
-                    <!-- Lead -->
+                
+                <div class="modal-body deal-modal-body">
+                <!-- Lead -->
                     <section class="deal-section">
                         <div class="deal-section-head">
                             <span class="deal-section-icon"><i class="bi bi-person-badge"></i></span>

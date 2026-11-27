@@ -1,0 +1,68 @@
+@using Microsoft.EntityFrameworkCore
+@using MultiverseCRM.Data
+@model int? 
+@inject AppDbContext Db
+@{
+    var projects = await Db.Projects.AsNoTracking()
+        .Where(p => p.IsActive)
+        .OrderBy(p => p.Name)
+        .Select(p => new { p.Id, p.Name })
+        .ToListAsync();
+
+    var currentId = Model;
+    var currentName = currentId.HasValue
+        ? projects.FirstOrDefault(p => p.Id == currentId.Value)?.Name
+        : null;
+}
+
+<div class="project-combobox">
+    <div class="d-flex gap-2 mb-2">
+        <select name="ProjectId" id="projectIdSelect" class="form-select">
+            <option value="">— Select configured project —</option>
+            @foreach (var p in projects)
+            {
+                <option value="@p.Id" selected="@(currentId == p.Id)">@p.Name</option>
+            }
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-secondary toggle-custom-project"
+                title="Type custom project name">
+            <i class="bi bi-pencil"></i>
+        </button>
+    </div>
+    <input name="Project" id="projectCustomInput" class="form-control d-none"
+           placeholder="Type custom project name…"
+           value="@currentName" />
+</div>
+
+<script>
+(function () {
+    const select = document.getElementById('projectIdSelect');
+    const customInput = document.getElementById('projectCustomInput');
+    const toggleBtn = select.parentElement.querySelector('.toggle-custom-project');
+    if (!select || !customInput || !toggleBtn) return;
+
+    toggleBtn.addEventListener('click', function () {
+        const showCustom = customInput.classList.contains('d-none');
+        if (showCustom) {
+            customInput.classList.remove('d-none');
+            select.value = '';
+            customInput.focus();
+            toggleBtn.innerHTML = '<i class="bi bi-list"></i>';
+            toggleBtn.title = 'Choose from configured projects';
+        } else {
+            customInput.classList.add('d-none');
+            customInput.value = '';
+            toggleBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            toggleBtn.title = 'Type custom project name';
+        }
+    });
+
+    select.addEventListener('change', function () {
+        if (this.value) {
+            customInput.value = '';
+            customInput.classList.add('d-none');
+            toggleBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+        }
+    });
+})();
+</script>

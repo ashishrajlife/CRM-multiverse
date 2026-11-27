@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MultiverseCRM.Data;
 using MultiverseCRM.Services;
+using MultiverseCRM.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,10 @@ builder.Services.Configure<AppOptions>(builder.Configuration.GetSection("App"));
 builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.Configure<PropertyMatchWeights>(
+    builder.Configuration.GetSection("PropertyMatchWeights"));
+
+builder.Services.AddScoped<IPropertyMatchService, PropertyMatchService>();
     
 
 var app = builder.Build();
