@@ -146,12 +146,16 @@ a { text-underline-offset: 3px; }
     flex-direction: column;
     width: 16.5rem;
     flex-shrink: 0;
-    height: 100vh;
-    height: 100dvh;
+    height: calc(100vh - 1.5rem);
+    height: calc(100dvh - 1.5rem);
+    margin: 0.75rem 0 0.75rem 0.75rem;
     background: #ffffff;
-    border-right: 1px solid rgba(15,23,42,.07);
-    box-shadow: 8px 0 40px -28px rgba(15,23,42,.18);
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px -20px rgba(15,23,42,.22);
     padding-left: env(safe-area-inset-left);
+    overflow: hidden;
+    transition: box-shadow .25s var(--ease), background-color .25s var(--ease);
 }
 
 .brand-logo {
@@ -297,12 +301,16 @@ a { text-underline-offset: 3px; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 4.3rem;
-    padding: env(safe-area-inset-top) calc(clamp(1rem, 2.2vw, 2.5rem) + env(safe-area-inset-right)) 0 clamp(1rem, 2.2vw, 2.5rem);
+    min-height: 3.6rem;
+    padding: 0.55rem 1rem;
+    margin: 0.85rem clamp(1rem, 2vw, 2.5rem) 0;
     background: #ffffff;
-    border-bottom: 1px solid rgba(15,23,42,.07);
-    box-shadow: 0 8px 24px -22px rgba(15,23,42,.25);
+    border: 4px solid rgba(5, 50, 50, 0.10);
+    border-radius: 1rem;
+    box-shadow: 0 10px 28px -20px rgba(15,23,42,.22);
+    transition: box-shadow .25s var(--ease), background-color .25s var(--ease);
 }
+
 .top-header h5 {
     font-family: var(--font-display);
     font-weight: 700;
@@ -2344,7 +2352,7 @@ a { text-underline-offset: 3px; }
 
 /* 6. Top header — pin content edges, no drift on zoom */
 .top-header {
-    width: 100%;
+    width: 95%;
     max-width: 100%;
 }
 

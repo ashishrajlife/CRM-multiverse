@@ -85,10 +85,14 @@
         /* Footer */
     .app-footer {
         flex-shrink: 0;
-        border-top: 1px solid rgba(15,23,42,.07);
+        margin: 0.75rem clamp(1rem, 2vw, 2.5rem) 0.75rem;
+        padding: 0.6rem 1rem;
+        padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
         background: #ffffff;
-        padding: 0.65rem clamp(1rem, 2.2vw, 2.5rem);
-        padding-bottom: calc(0.65rem + env(safe-area-inset-bottom));
+        border: 1px solid rgba(15,23,42,.08);
+        border-radius: 1rem;
+        box-shadow: 0 10px 28px -20px rgba(15,23,42,.22);
+        transition: box-shadow .25s var(--ease), background-color .25s var(--ease);
     }
     .app-footer-inner {
         display: flex;
