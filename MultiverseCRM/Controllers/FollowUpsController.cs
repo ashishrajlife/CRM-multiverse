@@ -55,7 +55,8 @@ public class FollowUpsController : Controller
         CancellationToken ct = default)
     {
         tab = (tab ?? "today").ToLowerInvariant();
-        if (tab != "today" && tab != "overdue" && tab != "upcoming" && tab != "all")
+        if (tab != "today" && tab != "overdue" && tab != "upcoming" 
+            && tab != "all" && tab != "closed")
             tab = "today";
 
         pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 10;
@@ -64,7 +65,9 @@ public class FollowUpsController : Controller
         var today = TodayIst();
 
         var allLeadsWithFollowUp = await _context.Leads
-        .Where(l => l.RemarkDate != null || l.Status == "Follow-up")
+        .Where(l => l.RemarkDate != null 
+                || l.Status == "Follow-up" 
+                || l.Status == "Closed Lead")
         .AsNoTracking()
         .Select(l => new
         {
@@ -72,10 +75,10 @@ public class FollowUpsController : Controller
             l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate
         })
         .ToListAsync(ct);
-
+    
         var enriched = allLeadsWithFollowUp.Select(l =>
         {
-            // Agar RemarkDate null hai (sirf Status == Follow-up) → aaj ka maano
+            bool isClosed = string.Equals(l.Status, "Closed Lead", StringComparison.OrdinalIgnoreCase);
             var rd = l.RemarkDate?.Date ?? today;
 
             var actualDiff = (rd - today).Days;
@@ -88,12 +91,14 @@ public class FollowUpsController : Controller
                 l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
                 l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate,
                 ActualDiff = actualDiff,
-                DisplayDiff = displayDiff
+                DisplayDiff = displayDiff,
+                IsClosed = isClosed
             };
         }).ToList();
-        var overdueRows  = enriched.Where(l => l.DisplayDiff < 0).ToList();
-        var todayRows    = enriched.Where(l => l.DisplayDiff == 0).ToList();
-        var upcomingRows = enriched.Where(l => l.DisplayDiff > 0).ToList();
+         var closedRows   = enriched.Where(l => l.IsClosed).ToList();
+        var overdueRows  = enriched.Where(l => !l.IsClosed && l.DisplayDiff < 0).ToList();
+        var todayRows    = enriched.Where(l => !l.IsClosed && l.DisplayDiff == 0).ToList();
+        var upcomingRows = enriched.Where(l => !l.IsClosed && l.DisplayDiff > 0).ToList();
 
         var staffOptions = enriched
             .Where(l => !string.IsNullOrWhiteSpace(l.Staff))
@@ -107,7 +112,8 @@ public class FollowUpsController : Controller
             "overdue"  => overdueRows.Cast<dynamic>().ToList(),
             "today"    => todayRows.Cast<dynamic>().ToList(),
             "upcoming" => upcomingRows.Cast<dynamic>().ToList(),
-            _          => enriched.Cast<dynamic>().ToList()
+            "closed"   => closedRows.Cast<dynamic>().ToList(),
+           _          => enriched.Where(l => !l.IsClosed).Cast<dynamic>().ToList() 
         };
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -155,9 +161,10 @@ public class FollowUpsController : Controller
             DateTime rd = (DateTime?)l.RemarkDate ?? today; 
             int displayDiff = (int)l.DisplayDiff;
 
-            string bucket = displayDiff < 0 ? "overdue"
-                          : displayDiff == 0 ? "today"
-                          : "upcoming";
+            string bucket = (bool)l.IsClosed ? "closed"
+              : displayDiff < 0 ? "overdue"
+              : displayDiff == 0 ? "today"
+              : "upcoming";
 
             return new FollowUpRow
             {
@@ -173,7 +180,8 @@ public class FollowUpsController : Controller
                 LatestRemark = (string?)l.LatestRemark,
                 RemarkDate = rd,
                 DaysFromToday = displayDiff,
-                Bucket = bucket
+                Bucket = bucket,
+                IsClosed = (bool)l.IsClosed  
             };
         }).ToList();
 
@@ -188,7 +196,8 @@ public class FollowUpsController : Controller
             OverdueCount = overdueRows.Count,
             TodayCount = todayRows.Count,
             UpcomingCount = upcomingRows.Count,
-            AllCount = enriched.Count,
+            ClosedCount = closedRows.Count, 
+            AllCount = enriched.Count(l => !l.IsClosed),
             Page = page,
             PageSize = pageSize,
             TotalFiltered = totalFiltered,
@@ -211,7 +220,7 @@ public class FollowUpsController : Controller
 
             var today = TodayIst();
             lead.RemarkDate = null;
-            lead.Status = "Follow-up Done";
+            lead.Status = "Closed Lead";
             lead.LatestRemark = $"Follow-up completed on {today:dd MMM yyyy}";
             lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
@@ -247,6 +256,7 @@ public class FollowUpsController : Controller
             if (target < today) target = today;
 
             lead.RemarkDate = target;
+            lead.Status = "Follow-up";
             lead.LatestRemark = $"Follow-up rescheduled to {target:dd MMM yyyy}";
             lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
@@ -287,19 +297,27 @@ public class FollowUpsController : Controller
                 return Json(new { ok = false, error = "Leads not found" });
 
             var today = TodayIst();
+            int affectedCount = leads.Count;
 
             if (req.Action == "done")
             {
-                foreach (var l in leads)
+                var toClose = leads
+                    .Where(l => !string.Equals(l.Status, "Closed Lead", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                affectedCount = toClose.Count;
+
+                foreach (var l in toClose)
                 {
                     l.RemarkDate = null;
-                    l.Status = "Follow-up Done";  
+                    l.Status = "Closed Lead";
                     l.LatestRemark = $"Bulk follow-up completed on {today:dd MMM yyyy}";
                     l.UpdatedAt = DateTime.UtcNow;
                 }
             }
             else if (req.Action == "reschedule")
             {
+                affectedCount = leads.Count;
                 var target = (req.NewDate ?? today).Date;
                 if (target < today) target = today;
                 foreach (var l in leads)
