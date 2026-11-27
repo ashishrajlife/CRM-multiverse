@@ -40,11 +40,9 @@ public class FollowUpsController : Controller
     private static DateTime TodayIst() =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GetIstTz()).Date;
 
-    // ═══════════════════════════════════════════════════════════
-    // DISPLAY-LEVEL TOLERANCE
-    // Past dates within N days → display as "today" (belt & suspenders)
-    // ═══════════════════════════════════════════════════════════
-    private const int OverdueToleranceDays = 30;
+    // A follow-up becomes overdue once its RemarkDate is 2 calendar days
+    // in the past. One day late remains in the Today bucket as a grace day.
+    private const int OverdueAfterDays = 2;
 
     public async Task<IActionResult> Index(
         string tab = "today",
@@ -53,49 +51,54 @@ public class FollowUpsController : Controller
         string sortBy = "RemarkDate",
         string sortOrder = "asc",
         int page = 1,
-        int pageSize = 25,
+        int pageSize = 10,
         CancellationToken ct = default)
     {
         tab = (tab ?? "today").ToLowerInvariant();
-        if (tab != "today" && tab != "overdue" && tab != "upcoming" && tab != "all")
+        if (tab != "today" && tab != "overdue" && tab != "upcoming" 
+            && tab != "all" && tab != "closed")
             tab = "today";
 
-        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 25;
+        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 10;
         page = Math.Max(1, page);
 
         var today = TodayIst();
 
         var allLeadsWithFollowUp = await _context.Leads
-            .Where(l => l.RemarkDate != null)
-            .AsNoTracking()
-            .Select(l => new
-            {
-                l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
-                l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate
-            })
-            .ToListAsync(ct);
-
-        // Compute effective diff with tolerance (past-30 → 0 = today)
+        .Where(l => l.RemarkDate != null 
+                || l.Status == "Follow-up" 
+                || l.Status == "Closed Lead")
+        .AsNoTracking()
+        .Select(l => new
+        {
+            l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
+            l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate
+        })
+        .ToListAsync(ct);
+    
         var enriched = allLeadsWithFollowUp.Select(l =>
         {
-            var rd = l.RemarkDate!.Value;
-            var actualDiff = (rd.Date - today).Days;
-            var displayDiff = (actualDiff < 0 && actualDiff > -OverdueToleranceDays)
-                ? 0
-                : actualDiff;
+            bool isClosed = string.Equals(l.Status, "Closed Lead", StringComparison.OrdinalIgnoreCase);
+            var rd = l.RemarkDate?.Date ?? today;
+
+            var actualDiff = (rd - today).Days;
+            var displayDiff = actualDiff <= -OverdueAfterDays
+                ? actualDiff
+                : Math.Max(actualDiff, 0);
 
             return new
             {
                 l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
                 l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate,
                 ActualDiff = actualDiff,
-                DisplayDiff = displayDiff
+                DisplayDiff = displayDiff,
+                IsClosed = isClosed
             };
         }).ToList();
-
-        var overdueRows  = enriched.Where(l => l.DisplayDiff < 0).ToList();
-        var todayRows    = enriched.Where(l => l.DisplayDiff == 0).ToList();
-        var upcomingRows = enriched.Where(l => l.DisplayDiff > 0).ToList();
+         var closedRows   = enriched.Where(l => l.IsClosed).ToList();
+        var overdueRows  = enriched.Where(l => !l.IsClosed && l.DisplayDiff < 0).ToList();
+        var todayRows    = enriched.Where(l => !l.IsClosed && l.DisplayDiff == 0).ToList();
+        var upcomingRows = enriched.Where(l => !l.IsClosed && l.DisplayDiff > 0).ToList();
 
         var staffOptions = enriched
             .Where(l => !string.IsNullOrWhiteSpace(l.Staff))
@@ -109,7 +112,8 @@ public class FollowUpsController : Controller
             "overdue"  => overdueRows.Cast<dynamic>().ToList(),
             "today"    => todayRows.Cast<dynamic>().ToList(),
             "upcoming" => upcomingRows.Cast<dynamic>().ToList(),
-            _          => enriched.Cast<dynamic>().ToList()
+            "closed"   => closedRows.Cast<dynamic>().ToList(),
+           _          => enriched.Where(l => !l.IsClosed).Cast<dynamic>().ToList() 
         };
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -154,12 +158,13 @@ public class FollowUpsController : Controller
 
         var vmRows = pageRows.Select(l =>
         {
-            DateTime rd = (DateTime)l.RemarkDate!;
+            DateTime rd = (DateTime?)l.RemarkDate ?? today; 
             int displayDiff = (int)l.DisplayDiff;
 
-            string bucket = displayDiff < 0 ? "overdue"
-                          : displayDiff == 0 ? "today"
-                          : "upcoming";
+            string bucket = (bool)l.IsClosed ? "closed"
+              : displayDiff < 0 ? "overdue"
+              : displayDiff == 0 ? "today"
+              : "upcoming";
 
             return new FollowUpRow
             {
@@ -175,7 +180,8 @@ public class FollowUpsController : Controller
                 LatestRemark = (string?)l.LatestRemark,
                 RemarkDate = rd,
                 DaysFromToday = displayDiff,
-                Bucket = bucket
+                Bucket = bucket,
+                IsClosed = (bool)l.IsClosed  
             };
         }).ToList();
 
@@ -190,7 +196,8 @@ public class FollowUpsController : Controller
             OverdueCount = overdueRows.Count,
             TodayCount = todayRows.Count,
             UpcomingCount = upcomingRows.Count,
-            AllCount = enriched.Count,
+            ClosedCount = closedRows.Count, 
+            AllCount = enriched.Count(l => !l.IsClosed),
             Page = page,
             PageSize = pageSize,
             TotalFiltered = totalFiltered,
@@ -213,6 +220,7 @@ public class FollowUpsController : Controller
 
             var today = TodayIst();
             lead.RemarkDate = null;
+            lead.Status = "Closed Lead";
             lead.LatestRemark = $"Follow-up completed on {today:dd MMM yyyy}";
             lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
@@ -248,6 +256,7 @@ public class FollowUpsController : Controller
             if (target < today) target = today;
 
             lead.RemarkDate = target;
+            lead.Status = "Follow-up";
             lead.LatestRemark = $"Follow-up rescheduled to {target:dd MMM yyyy}";
             lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
@@ -288,18 +297,27 @@ public class FollowUpsController : Controller
                 return Json(new { ok = false, error = "Leads not found" });
 
             var today = TodayIst();
+            int affectedCount = leads.Count;
 
             if (req.Action == "done")
             {
-                foreach (var l in leads)
+                var toClose = leads
+                    .Where(l => !string.Equals(l.Status, "Closed Lead", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                affectedCount = toClose.Count;
+
+                foreach (var l in toClose)
                 {
                     l.RemarkDate = null;
+                    l.Status = "Closed Lead";
                     l.LatestRemark = $"Bulk follow-up completed on {today:dd MMM yyyy}";
                     l.UpdatedAt = DateTime.UtcNow;
                 }
             }
             else if (req.Action == "reschedule")
             {
+                affectedCount = leads.Count;
                 var target = (req.NewDate ?? today).Date;
                 if (target < today) target = today;
                 foreach (var l in leads)

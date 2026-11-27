@@ -27,6 +27,7 @@ public class FollowUpsViewModel
 
     public List<string> StaffOptions { get; set; } = new();
     public string? StaffFilter { get; set; }
+    public int ClosedCount { get; set; }
 }
 
 public class FollowUpRow
@@ -44,4 +45,5 @@ public class FollowUpRow
     public DateTime RemarkDate { get; set; }
     public int DaysFromToday { get; set; }
     public string Bucket { get; set; } = "";
+    public bool IsClosed { get; set; }
 }

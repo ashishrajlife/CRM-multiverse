@@ -26,7 +26,7 @@
         d.Id, d.LeadId, d.Stage, d.Project, d.BHK, d.Location, d.City, d.AreaSqft,
         d.Value, d.BookingAmount, d.ReceivedAmount,
         ExpectedCloseDateStr = d.ExpectedCloseDate?.ToString("yyyy-MM-dd"),
-        d.Status, d.Notes, d.Tags, d.OwnerDisplayName, d.OwnerUserName
+        d.Status, d.Notes, d.Tags, d.OwnerDisplayName, d.OwnerUserName,d.ProjectId,d.PropertyId
     });
 
     string SortIcon(string col) => Model.SortBy != col ? "bi-arrow-down-up"
@@ -131,6 +131,147 @@
     </div>
 </form>
 
+
+<!-- MOBILE DEAL CARDS -->
+<div class="mobile-deal-cards">
+    @foreach (var d in Model.Deals)
+    {
+        var balance = d.Value - (d.ReceivedAmount ?? 0);
+        var isClosed = d.ClosedAt.HasValue || d.Status == "Won" || d.Status == "Lost";
+
+      var property = Model.AllProperties .FirstOrDefault(p => p.Id == d.PropertyId);
+        
+        <div class="mobile-deal-card">
+            <div class="mobile-card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="lead-avatar">
+                        @Format.Initials(d.Lead?.FullName ?? d.Project ?? "D")
+                    </span>
+
+                    <div>
+                        <div class="fw-bold text-dark">
+                            @(d.Project ?? $"Deal #{d.Id}")
+                        </div>
+                        <small class="text-muted">
+                            @(d.Lead?.FullName ?? "No lead")
+                        </small>
+                    </div>
+                </div>
+
+                <span class="pill"
+                      style="--pill:@stageColor.GetValueOrDefault(d.Stage, "#64748b")">
+                    @d.Stage
+                </span>
+            </div>
+
+            <div class="mobile-card-value">
+                <small class="text-muted">Deal Value</small>
+                <div class="fw-bold fs-5">
+                    @app.CurrencySymbol @d.Value.ToString("N0")
+                </div>
+            </div>
+
+            <div class="mobile-card-grid">
+                <div>
+                    <small>Booking</small>
+                    <strong>@(d.BookingAmount.HasValue ? app.CurrencySymbol + " " + d.BookingAmount.Value.ToString("N0") : "—")</strong>
+                </div>
+
+                <div>
+                    <small>Received</small>
+                    <strong>@(d.ReceivedAmount.HasValue ? app.CurrencySymbol + " " + d.ReceivedAmount.Value.ToString("N0") : "—")</strong>
+                </div>
+
+                <div>
+                    <small>Balance</small>
+                    <strong class="@(balance > 0 ? "text-danger" : "text-success")">
+                        @app.CurrencySymbol @balance.ToString("N0")
+                    </strong>
+                </div>
+
+                <div>
+                    <small>Property</small>
+                    <strong>
+                        @(property != null ? "Unit " + property.UnitNumber : d.PropertyId.HasValue ? "Property #" + d.PropertyId : "—")
+                    </strong>
+                </div>
+
+                <div>
+                    <small>BHK</small>
+                    <strong>@(d.BHK ?? property?.BHK ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Area</small>
+                    <strong>
+                        @(d.AreaSqft.HasValue
+                            ? d.AreaSqft.Value.ToString("N0") + " sqft"
+                            : property?.CarpetArea?.ToString("N0") + " sqft" ?? "—")
+                    </strong>
+                </div>
+
+                <div>
+                    <small>City</small>
+                    <strong>@(d.City ?? property?.City ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Owner</small>
+                    <strong>@(d.OwnerDisplayName ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Expected Close</small>
+                    <strong>@(d.ExpectedCloseDate?.ToString("dd MMM yyyy") ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Status</small>
+                    <strong class="@(d.Status == "Won" ? "text-success" : d.Status == "Lost" ? "text-danger" : "text-primary")">
+                        @d.Status
+                    </strong>
+                </div>
+            </div>
+
+            <div class="mobile-card-footer">
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary btn-edit-deal"
+                        data-deal='@DealJson(d)'
+                        data-bs-toggle="modal"
+                        data-bs-target="#editDealModal">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-success btn-toggle-deal"
+                        data-id="@d.Id"
+                        data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                        data-closed="@isClosed.ToString().ToLowerInvariant()">
+                    <i class="bi @(isClosed ? "bi-arrow-counterclockwise" : "bi-check-circle")"></i>
+                    @(isClosed ? "Reopen" : "Close")
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger btn-delete-deal"
+                        data-id="@d.Id"
+                        data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteDealModal">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Deals.Any())
+    {
+        <div class="text-center text-muted py-5">
+            No deals found.
+        </div>
+    }
+</div>
+
+
 <!-- Scroll-locked table with all fields -->
 <div class="deals-table-wrap">
     <div class="table-container">
@@ -152,6 +293,7 @@
                         <th>Received</th>
                         <th>Balance</th>
                         <th>Project</th>
+                        <th>Property</th>
                         <th>BHK</th>
                         <th>Location</th>
                         <th>City</th>
@@ -220,11 +362,76 @@
                             <td class="@(balance > 0 ? "text-danger fw-medium" : "text-success fw-medium")">
                                 @app.CurrencySymbol @balance.ToString("N0")
                             </td>
-                            <td>@(d.Project ?? "—")</td>
-                            <td>@(d.BHK ?? "—")</td>
-                            <td>@(d.Location ?? "—")</td>
-                            <td>@(d.City ?? "—")</td>
-                            <td>@(d.AreaSqft.HasValue ? d.AreaSqft.Value.ToString("N0") + " sqft" : "—")</td>
+                            <td>
+                                @if (d.ProjectEntity != null)
+                                {
+                                    <span class="badge-soft-primary">@d.ProjectEntity.Name</span>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(d.Project))
+                                {
+                                    <span class="text-muted">@d.Project</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    // Prefer the EF navigation; fall back to the selected dropdown option.
+                                    var propertyOption = Model.AllProperties.FirstOrDefault(p => p.Id == d.PropertyId);
+                                }
+                                @if (d.PropertyEntity != null)
+                                {
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold">Unit @d.PropertyEntity.UnitNumber</span>
+                                        @if (!string.IsNullOrWhiteSpace(d.PropertyEntity.Title))
+                                        {
+                                            <small class="text-muted">@d.PropertyEntity.Title</small>
+                                        }
+                                    </div>
+                                }
+                                else if (propertyOption != null)
+                                {
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold">Unit @propertyOption.UnitNumber</span>
+                                        @if (!string.IsNullOrWhiteSpace(propertyOption.Title))
+                                        {
+                                            <small class="text-muted">@propertyOption.Title</small>
+                                        }
+                                    </div>
+                                }
+                                else if (d.PropertyId.HasValue)
+                                {
+                                    <span class="text-muted">Property #@d.PropertyId</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>
+                                @(d.BHK ?? d.PropertyEntity?.BHK ?? "—")
+                            </td>
+
+                            <td>
+                                @(d.Location ?? d.PropertyEntity?.Location ?? "—")
+                            </td>
+
+                            <td>
+                                @(d.City ?? d.PropertyEntity?.City ?? "—")
+                            </td>
+
+                            <td>
+                                @{
+                                    var area = d.AreaSqft
+                                        ?? d.PropertyEntity?.CarpetArea
+                                        ?? d.PropertyEntity?.BuiltUpArea;
+                                }
+                                @(area.HasValue
+                                    ? area.Value.ToString("N0") + " sqft"
+                                    : "—")
+                            </td>
                             <td>@(d.ExpectedCloseDate?.ToString("dd MMM yy") ?? "—")</td>
                             <td>@(d.ClosedAt?.ToString("dd MMM yy, hh:mm tt") ?? "—")</td>
                             <td>@(d.OwnerDisplayName ?? "—")</td>
@@ -247,6 +454,21 @@
                                         data-bs-toggle="modal" data-bs-target="#editDealModal">
                                     <i class="bi bi-pencil"></i>
                                 </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-link p-1 btn-toggle-deal"
+                                        title="@(d.ClosedAt.HasValue || d.Status == "Won" || d.Status == "Lost" ? "Reopen deal" : "Close deal")"
+                                        data-id="@d.Id"
+                                        data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                                        data-closed="@((d.ClosedAt.HasValue || d.Status == "Won" || d.Status == "Lost").ToString().ToLowerInvariant())">
+                                    @if (d.ClosedAt.HasValue || d.Status == "Won" || d.Status == "Lost")
+                                    {
+                                        <i class="bi bi-arrow-counterclockwise text-success"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-check-circle text-success"></i>
+                                    }
+                                </button>
                                 <button class="btn btn-sm btn-link text-danger p-1 btn-delete-deal"
                                         data-id="@d.Id" data-title="@(d.Project ?? $"Deal #{d.Id}")"
                                         data-bs-toggle="modal" data-bs-target="#deleteDealModal">
@@ -257,7 +479,7 @@
                     }
                     @if (!Model.Deals.Any())
                     {
-                        <tr><td colspan="20" class="text-center py-5 text-muted">
+                       <tr><td colspan="21" class="text-center py-5 text-muted">
                             <i class="bi bi-briefcase fs-2 d-block mb-2"></i>No deals found.
                         </td></tr>
                     }
@@ -293,14 +515,447 @@
                 return;
             }
 
+            const toggleBtn = e.target.closest('.btn-toggle-deal');
+            if (toggleBtn) {
+                const isClosed = toggleBtn.dataset.closed === 'true';
+                const actionText = isClosed ? 'reopen' : 'close';
+                const password = window.prompt(`Enter password to ${actionText} this deal:`);
+                if (password === null) return;
+
+                const token = document.querySelector('#editDealModal input[name="__RequestVerificationToken"]')?.value
+                    || document.querySelector('#deleteDealModal input[name="__RequestVerificationToken"]')?.value;
+
+                const body = new URLSearchParams({
+                    id: toggleBtn.dataset.id,
+                    password: password,
+                    __RequestVerificationToken: token || ''
+                });
+
+                fetch('@Url.Action("ToggleClose", "Deals")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'RequestVerificationToken': token || ''
+                    },
+                    body: body.toString()
+                })
+                .then(async response => {
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok || !result.ok) {
+                        alert(result.message || 'Unable to update deal status.');
+                        return;
+                    }
+                    window.location.reload();
+                })
+                .catch(() => alert('Something went wrong. Please try again.'));
+                return;
+            }
+
             const btn = e.target.closest('.btn-edit-deal');
             if (!btn) return;
+
             const d = JSON.parse(btn.dataset.deal);
-            for (const [key, val] of Object.entries(d)) {
-                const el = document.getElementById('deal-' + key.charAt(0).toUpperCase() + key.slice(1));
-                if (!el) continue;
-                el.value = val ?? '';
+            const form = document.querySelector('#editDealModal form');
+            if (!form) return;
+
+            // Bind posted fields by their actual form name, not guessed element IDs.
+            const fieldMap = {
+                Id: 'Id',
+                LeadId: 'LeadId',
+                Stage: 'Stage',
+                Value: 'Value',
+                BookingAmount: 'BookingAmount',
+                ReceivedAmount: 'ReceivedAmount',
+                ExpectedCloseDateStr: 'ExpectedCloseDate',
+                Status: 'Status',
+                OwnerDisplayName: 'OwnerDisplayName',
+                Tags: 'Tags',
+                Notes: 'Notes'
+            };
+
+            Object.entries(fieldMap).forEach(([jsonKey, fieldName]) => {
+                const field = form.querySelector(`[name="${fieldName}"]`);
+                if (!field) return;
+
+                field.value = d[jsonKey] ?? '';
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            // Keep Project and Property independent. Never derive one picker from the other.
+            const editProjectPicker = form.querySelector('[name="ProjectId"]');
+            const editPropertyPicker = form.querySelector('[name="PropertyId"]');
+
+            if (editProjectPicker) {
+                editProjectPicker.value = d.ProjectId == null ? '' : String(d.ProjectId);
+                editProjectPicker.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            if (editPropertyPicker) {
+                editPropertyPicker.value = d.PropertyId == null ? '' : String(d.PropertyId);
+                editPropertyPicker.dispatchEvent(new Event('change', { bubbles: true }));
             }
         });
-    </script>
+
+                // ═══════════════════════════════════════════════════════
+        // Project + Property picker — INDEPENDENT, no filtering
+        // ═══════════════════════════════════════════════════════
+        function initPropertyPicker(cfg) {
+            const picker   = document.getElementById(cfg.pickerId);
+            const preview  = document.getElementById(cfg.previewId);
+            const clearBtn = document.getElementById(cfg.clearId);
+            const projSel  = document.getElementById(cfg.projectPickerId);
+            if (!picker || !preview) return;
+
+            function setText(id, v) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = (v && v !== 'null') ? v : '—';
+            }
+            function fmtMoney(v) {
+                if (v == null || v === '' || v === 'null') return '—';
+                const n = Number(v);
+                if (isNaN(n)) return '—';
+                return '₹' + n.toLocaleString('en-IN');
+            }
+
+            // ═══ Property → preview card + auto-fill ═══
+            function showPropertyPreview() {
+                const opt = picker.selectedOptions[0];
+                if (!opt || !opt.value) { preview.classList.add('d-none'); return; }
+
+                const d = opt.dataset;
+                setText(cfg.fieldPrefix + 'Title',  d.title || opt.textContent.trim());
+                setText(cfg.fieldPrefix + 'Sub',    (d.unit ? 'Unit ' + d.unit : '') + (d.type ? ' · ' + d.type : ''));
+                setText(cfg.fieldPrefix + 'Status', d.status || '—');
+                setText(cfg.fieldPrefix + 'Project', d.project || '—');
+                setText(cfg.fieldPrefix + 'Bhk',    d.bhk || '—');
+                setText(cfg.fieldPrefix + 'City',   d.city || '—');
+                setText(cfg.fieldPrefix + 'Location', d.location || '—');
+                setText(cfg.fieldPrefix + 'Carpet', d.carpet ? d.carpet + ' ' + (d.areaunit || 'sqft') : '—');
+                setText(cfg.fieldPrefix + 'Builtup', d.builtup ? d.builtup + ' ' + (d.areaunit || 'sqft') : '—');
+                setText(cfg.fieldPrefix + 'Price',  fmtMoney(d.price));
+
+                preview.classList.remove('d-none');
+            }
+
+            function fillFormFromProperty() {
+                const opt = picker.selectedOptions[0];
+                if (!opt || !opt.value) return;
+                const d = opt.dataset;
+                const setVal = (name, v) => {
+                    const el = cfg.form.querySelector(`[name="${name}"]`);
+                    if (el && v != null && v !== '') el.value = v;
+                };
+                setVal('Project',  d.project);
+                setVal('BHK',      d.bhk);
+                setVal('Location', d.location);
+                setVal('City',     d.city);
+                setVal('AreaSqft', d.carpet || d.builtup);
+                const valueInput = cfg.form.querySelector('[name="Value"]');
+                if (valueInput && d.price && !valueInput.value) {
+                    valueInput.value = d.price;
+                }
+            }
+
+            picker.addEventListener('change', () => {
+                showPropertyPreview();
+                fillFormFromProperty();
+            });
+            clearBtn?.addEventListener('click', () => {
+                picker.value = '';
+                preview.classList.add('d-none');
+            });
+
+            // ═══ Project → auto-fill project details (does NOT touch property list) ═══
+            if (projSel) {
+                projSel.addEventListener('change', () => {
+                    const opt = projSel.selectedOptions[0];
+                    if (!opt || !opt.value) return;
+                    const projName = opt.textContent.trim();
+                    const projInput = cfg.form.querySelector('[name="Project"]');
+                    if (projInput && !projInput.value) projInput.value = projName;
+                });
+            }
+
+            if (cfg.modal) {
+                cfg.modal.addEventListener('shown.bs.modal', showPropertyPreview);
+            }
+        }
+
+                // Init CREATE modal pickers
+        initPropertyPicker({
+            pickerId:        'createPropertyPicker',
+            projectPickerId: 'createProjectPicker',
+            previewId:       'createPropertyPreview',
+            clearId:         'ppcClear',
+            fieldPrefix:     'ppc',
+            form:            document.querySelector('#addDealModal form'),
+            modal:           document.getElementById('addDealModal')
+        });
+
+        // Init EDIT modal pickers
+        initPropertyPicker({
+            pickerId:        'editPropertyPicker',
+            projectPickerId: 'editProjectPicker',
+            previewId:       'editPropertyPreview',
+            clearId:         'eppcClear',
+            fieldPrefix:     'eppc',
+            form:            document.querySelector('#editDealModal form'),
+            modal:           document.getElementById('editDealModal')
+        });
+        </script>
+        <style>
+
+/* ================================
+   DEALS TABLE - PREMIUM DESIGN
+================================ */
+
+.deals-table-wrap {
+    width: 100%;
+    margin-top: 18px;
+}
+
+.table-container {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #dbe3ed;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.table-scroll-area {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 650px;
+}
+
+.premium-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+    font-size: 13px;
+    color: #334155;
+}
+
+/* All headers same color and alignment */
+.premium-table thead th {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-align: center !important;
+    vertical-align: middle;
+    white-space: nowrap;
+    padding: 14px 12px;
+    border: 1px solid #475569;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+/* Header links */
+.premium-table thead th a,
+.premium-table thead th .sort-header {
+    color: #ffffff !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.premium-table thead th a:hover {
+    color: #93c5fd !important;
+}
+
+/* All body cells */
+.premium-table tbody td {
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 12px 12px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    background: #ffffff;
+}
+
+/* Alternate rows */
+.premium-table tbody tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+/* Hover effect */
+.premium-table tbody tr:hover td {
+    background: #eff6ff !important;
+    transition: background 0.15s ease;
+}
+
+/* Sticky first column */
+.premium-table .sticky-col-left {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    min-width: 190px;
+    border-right: 2px solid #cbd5e1;
+}
+
+/* Sticky first column header */
+.premium-table thead .sticky-col-left {
+    z-index: 8;
+    background: #1e293b !important;
+}
+
+/* Sticky action column */
+.premium-table .sticky-col-right {
+    position: sticky;
+    right: 0;
+    z-index: 3;
+    min-width: 100px;
+    border-left: 2px solid #cbd5e1;
+}
+
+/* Sticky action header */
+.premium-table thead .sticky-col-right {
+    z-index: 8;
+    background: #1e293b !important;
+}
+
+/* Text truncation */
+.premium-table .cell-truncate {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badges */
+.premium-table .badge-soft-primary,
+.premium-table .badge-soft-success,
+.premium-table .badge-soft-warning,
+.premium-table .pill {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Action buttons */
+.premium-table .sticky-col-right button {
+    margin: 0 3px;
+}
+
+/* Scrollbar */
+.table-scroll-area::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+.table-scroll-area::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.table-scroll-area::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 10px;
+}
+
+.table-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+
+/* Mobile cards hidden on desktop */
+.mobile-deal-cards {
+    display: none;
+}
+
+/* Mobile responsive layout */
+@@media (max-width: 767px) {
+
+    .mobile-deal-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 15px;
+    }
+
+    /* Hide desktop table */
+    .deals-table-wrap .table-scroll-area {
+        display: none;
+    }
+
+    .mobile-deal-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .mobile-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .mobile-card-header .pill {
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .mobile-card-value {
+        padding: 13px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .mobile-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px 10px;
+        padding: 14px 0;
+    }
+
+    .mobile-card-grid div {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        gap: 3px;
+    }
+
+    .mobile-card-grid small {
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    .mobile-card-grid strong {
+        font-size: 13px;
+        color: #1e293b;
+        overflow-wrap: anywhere;
+    }
+
+    .mobile-card-footer {
+        display: flex;
+        gap: 7px;
+        padding-top: 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .mobile-card-footer button {
+        flex: 1;
+        font-size: 12px;
+        padding: 7px 4px;
+    }
+
+    /* Keep pagination visible */
+    .table-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px;
+    }
+}
+</style>
 }

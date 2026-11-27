@@ -50,41 +50,77 @@
                         </div>
                     </section>
 
-                    <!-- Property -->
+                                        <!-- Project & Property (prefill) -->
                     <section class="deal-section">
                         <div class="deal-section-head">
-                            <span class="deal-section-icon"><i class="bi bi-house-door"></i></span>
-                            <span class="deal-section-title">Property</span>
+                            <span class="deal-section-icon"><i class="bi bi-buildings"></i></span>
+                            <span class="deal-section-title">Project &amp; Property</span>
+                            <span class="deal-section-hint">Optional — prefills below</span>
                         </div>
+
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-medium">Project</label>
-                                <input name="Project" class="form-control" placeholder="Skyline Towers" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-medium">BHK</label>
-                                <select name="BHK" class="form-select">
-                                    <option value="">Select BHK…</option>
-                                    <option>1BHK</option>
-                                    <option>2BHK</option>
-                                    <option>3BHK</option>
-                                    <option>4BHK</option>
-                                    <option>5BHK+</option>
+                               <select id="createProjectPicker" name="ProjectId" class="form-select">
+                                    <option value="">— Any project —</option>
+                                    @foreach (var p in Model.AllProjects)
+                                    {
+                                        <option value="@p.Id">@p.Name</option>
+                                    }
                                 </select>
+                                <div class="form-text">Pick a project to narrow properties.</div>
                             </div>
+
                             <div class="col-md-6">
-                                <label class="form-label small fw-medium">Location</label>
-                                <input name="Location" class="form-control" placeholder="Andheri West" />
+                                <label class="form-label small fw-medium">Property</label>
+                                <select id="createPropertyPicker" name="PropertyId" class="form-select">
+                                    <option value="">— No property —</option>
+                                    @foreach (var pr in Model.AllProperties)
+                                    {
+                                        <option value="@pr.Id"
+                                                data-project-id="@pr.ProjectId"
+                                                data-unit="@pr.UnitNumber"
+                                                data-title="@pr.Title"
+                                                data-project="@pr.ProjectName"
+                                                data-bhk="@pr.BHK"
+                                                data-city="@pr.City"
+                                                data-location="@pr.Location"
+                                                data-price="@pr.TotalPrice"
+                                                data-carpet="@pr.CarpetArea"
+                                                data-builtup="@pr.BuiltUpArea"
+                                                data-status="@pr.Status"
+                                                data-type="@pr.PropertyType"
+                                                data-areaunit="@pr.AreaUnit">
+                                            @pr.UnitNumber@(pr.Title != null ? " — " + pr.Title : "")
+                                            @(pr.ProjectName != null ? " · " + pr.ProjectName : "")
+                                        </option>
+                                    }
+                                </select>
+                                <div class="form-text">Pick a unit to auto-fill details below.</div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-medium">City</label>
-                                <input name="City" class="form-control" placeholder="Mumbai" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-medium">Area</label>
-                                <div class="input-group">
-                                    <input name="AreaSqft" type="number" step="0.01" class="form-control" placeholder="1200" />
-                                    <span class="input-group-text">sqft</span>
+
+                            <div class="col-12 d-none" id="createPropertyPreview">
+                                <div class="property-preview-card">
+                                    <div class="ppc-top">
+                                        <div class="ppc-icon"><i class="bi bi-house-check-fill"></i></div>
+                                        <div class="ppc-meta">
+                                            <div class="ppc-title" id="ppcTitle">—</div>
+                                            <div class="ppc-sub" id="ppcSub">—</div>
+                                        </div>
+                                        <span class="ppc-badge" id="ppcStatus">—</span>
+                                    </div>
+                                    <div class="ppc-grid">
+                                        <div class="ppc-cell"><small>Project</small><b id="ppcProject">—</b></div>
+                                        <div class="ppc-cell"><small>BHK</small><b id="ppcBhk">—</b></div>
+                                        <div class="ppc-cell"><small>City</small><b id="ppcCity">—</b></div>
+                                        <div class="ppc-cell"><small>Location</small><b id="ppcLocation">—</b></div>
+                                        <div class="ppc-cell"><small>Carpet</small><b id="ppcCarpet">—</b></div>
+                                        <div class="ppc-cell"><small>Built-up</small><b id="ppcBuiltup">—</b></div>
+                                        <div class="ppc-cell ppc-price"><small>Total Price</small><b id="ppcPrice">—</b></div>
+                                    </div>
+                                    <button type="button" class="ppc-clear" id="ppcClear" title="Clear selection">
+                                        <i class="bi bi-x"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>

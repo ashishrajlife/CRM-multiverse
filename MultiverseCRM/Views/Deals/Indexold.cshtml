@@ -1,0 +1,656 @@
+@model MultiverseCRM.ViewModels.DealListViewModel
+@{
+    ViewData["Title"] = "Deals";
+    var app = AppOpt.Value;
+    var stageOpts = await Lookups.GetAsync("DealStage");
+    var stageColor = stageOpts.ToDictionary(o => o.Value, o => o.Color ?? "#64748b");
+
+    var totalPages = Math.Max(1, (int)Math.Ceiling(Model.FilteredCount / (double)Model.PageSize));
+    var firstRow = Model.FilteredCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var lastRow = Math.Min(Model.Page * Model.PageSize, Model.FilteredCount);
+
+    Dictionary<string, string> Rd(int p) => new()
+    {
+        ["stage"] = Model.ActiveStage,
+        ["status"] = Model.ActiveStatus,
+        ["search"] = Model.SearchTerm ?? "",
+        ["owner"] = Model.OwnerFilter ?? "",
+        ["sortBy"] = Model.SortBy,
+        ["sortOrder"] = Model.SortOrder,
+        ["pageSize"] = Model.PageSize.ToString(),
+        ["page"] = p.ToString()
+    };
+
+    string DealJson(MultiverseCRM.Models.Deal d) => System.Text.Json.JsonSerializer.Serialize(new
+    {
+        d.Id, d.LeadId, d.Stage, d.Project, d.BHK, d.Location, d.City, d.AreaSqft,
+        d.Value, d.BookingAmount, d.ReceivedAmount,
+        ExpectedCloseDateStr = d.ExpectedCloseDate?.ToString("yyyy-MM-dd"),
+        d.Status, d.Notes, d.Tags, d.OwnerDisplayName, d.OwnerUserName,d.ProjectId,d.PropertyId
+    });
+
+    string SortIcon(string col) => Model.SortBy != col ? "bi-arrow-down-up"
+        : (Model.SortOrder == "asc" ? "bi-arrow-up" : "bi-arrow-down");
+    string NextOrder(string col) => Model.SortBy != col ? "asc"
+        : (Model.SortOrder == "asc" ? "desc" : "asc");
+
+    bool hasStage = !string.IsNullOrWhiteSpace(Model.ActiveStage) && Model.ActiveStage != "All";
+    bool hasOwner = !string.IsNullOrWhiteSpace(Model.OwnerFilter) && Model.OwnerFilter != "All";
+    bool hasSearch = !string.IsNullOrWhiteSpace(Model.SearchTerm);
+    bool hasStatusFilter = Model.ActiveStatus != "All";
+    bool anyFilter = hasStage || hasOwner || hasSearch || hasStatusFilter;
+}
+
+<!-- KPI strip -->
+<div class="deal-kpi">
+    <div class="kpi-card">
+        <div class="card-body">
+            <div class="kpi-icon" style="--c:#5CD1FF"><i class="bi bi-briefcase"></i></div>
+            <div>
+                <div class="text-muted">Total Deals</div>
+                <div class="fs-2">@Model.TotalCount</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="card-body">
+            <div class="kpi-icon" style="--c:#f59e0b"><i class="bi bi-graph-up-arrow"></i></div>
+            <div>
+                <div class="text-muted">Open Pipeline</div>
+                <div class="fs-2">@app.CurrencySymbol @Model.TotalPipelineValue.ToString("N0")</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="card-body">
+            <div class="kpi-icon" style="--c:#16a34a"><i class="bi bi-trophy"></i></div>
+            <div>
+                <div class="text-muted">Won</div>
+                <div class="fs-2">@app.CurrencySymbol @Model.TotalWonValue.ToString("N0")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="deals-filters" id="dealFilterForm">
+    <input type="hidden" name="sortBy" value="@Model.SortBy" />
+    <input type="hidden" name="sortOrder" value="@Model.SortOrder" />
+    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+
+    <!-- LEFT: New Deal button + filter fields -->
+    <div class="filter-group">
+
+        <!-- New Deal button — pinned first -->
+        <button type="button" class="btn btn-primary btn-sm px-3"
+                data-bs-toggle="modal" data-bs-target="#addDealModal">
+            <i class="bi bi-plus-lg me-1"></i> New Deal
+        </button>
+
+        <!-- Stage -->
+        <select name="stage" class="form-select form-select-sm" style="max-width: 145px;">
+            <option value="All" selected="@(Model.ActiveStage == "All")">All stages</option>
+            @foreach (var s in stageOpts)
+            {
+                <option value="@s.Value" selected="@(Model.ActiveStage == s.Value)">@(s.Label ?? s.Value)</option>
+            }
+        </select>
+
+        <!-- Owner -->
+        <select name="owner" class="form-select form-select-sm" style="max-width: 145px;">
+            <option value="" selected="@string.IsNullOrWhiteSpace(Model.OwnerFilter)">All owners</option>
+            @foreach (var o in Model.AllOwners)
+            {
+                <option value="@o" selected="@(Model.OwnerFilter == o)">@o</option>
+            }
+        </select>
+
+        <!-- Status -->
+        <select name="status" class="form-select form-select-sm" style="max-width: 130px;">
+            <option value="All" selected="@(Model.ActiveStatus == "All")">All</option>
+            <option value="Open" selected="@(Model.ActiveStatus == "Open")">Open</option>
+            <option value="Won" selected="@(Model.ActiveStatus == "Won")">Won</option>
+            <option value="Lost" selected="@(Model.ActiveStatus == "Lost")">Lost</option>
+        </select>
+
+        <!-- Search input -->
+        <div class="input-group input-group-sm search-wrap">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="dealSearch" name="search" value="@Model.SearchTerm"
+                   class="form-control border-start-0" placeholder="Search deals…" autocomplete="off" />
+        </div>
+    </div>
+
+    <!-- RIGHT: actions pinned to the extreme right -->
+    <div class="action-group">
+        <button type="submit" class="btn btn-primary btn-sm px-3">
+            <i class="bi bi-search me-1"></i> Search
+        </button>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm px-3" title="Reset all filters">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+        </a>
+    </div>
+</form>
+
+<!-- Scroll-locked table with all fields -->
+<div class="deals-table-wrap">
+    <div class="table-container">
+        <div class="table-scroll-area">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th class="sticky-col-left">Deal / Lead</th>
+                        <th>Stage</th>
+                        <th>
+                            <a class="sort-header" asp-action="Index"
+                               asp-route-sortBy="Value" asp-route-sortOrder="@NextOrder("Value")"
+                               asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                               asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Value <i class="bi @SortIcon("Value")"></i>
+                            </a>
+                        </th>
+                        <th>Booking</th>
+                        <th>Received</th>
+                        <th>Balance</th>
+                        <th>Project</th>
+                        <th>Property</th>
+                        <th>BHK</th>
+                        <th>Location</th>
+                        <th>City</th>
+                        <th>Area</th>
+                        <th>
+                            <a class="sort-header" asp-action="Index"
+                               asp-route-sortBy="ExpectedCloseDate" asp-route-sortOrder="@NextOrder("ExpectedCloseDate")"
+                               asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                               asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Expected Close <i class="bi @SortIcon("ExpectedCloseDate")"></i>
+                            </a>
+                        </th>
+                        <th>Closed At</th>
+                        <th>Owner</th>
+                        <th>Status</th>
+                        <th>Tags</th>
+                        <th>Notes</th>
+                        <th style="min-width: 11rem;">
+                            <a class="sort-header" asp-action="Index"
+                            asp-route-sortBy="CreatedAt" asp-route-sortOrder="@NextOrder("CreatedAt")"
+                            asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                            asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Created <i class="bi @SortIcon("CreatedAt")"></i>
+                            </a>
+                        </th>
+                        <th style="min-width: 11rem;">
+                            <a class="sort-header" asp-action="Index"
+                            asp-route-sortBy="UpdatedAt" asp-route-sortOrder="@NextOrder("UpdatedAt")"
+                            asp-route-stage="@Model.ActiveStage" asp-route-status="@Model.ActiveStatus"
+                            asp-route-search="@Model.SearchTerm" asp-route-owner="@Model.OwnerFilter">
+                                Updated <i class="bi @SortIcon("UpdatedAt")"></i>
+                            </a>
+                        </th>
+                        <th class="text-center" style="min-width: 100px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model.Deals)
+                    {
+                        var balance = d.Value - (d.ReceivedAmount ?? 0);
+                        <tr>
+                            <td class="sticky-col-left">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="lead-avatar">@Format.Initials(d.Lead?.FullName ?? d.Project ?? "D")</span>
+                                    <div style="min-width:0">
+                                        <div class="fw-semibold text-dark text-truncate">@(d.Project ?? $"Deal #{d.Id}")</div>
+                                        @if (d.Lead != null)
+                                        {
+                                            <div class="deal-lead-label">
+                                                <i class="bi bi-person"></i>@d.Lead.FullName
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="deal-lead-label text-muted">
+                                                <i class="bi bi-person-dash"></i>No lead
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="pill" style="--pill:@stageColor.GetValueOrDefault(d.Stage, "#64748b")">@d.Stage</span></td>
+                            <td class="fw-medium">@app.CurrencySymbol @d.Value.ToString("N0")</td>
+                            <td>@(d.BookingAmount.HasValue ? app.CurrencySymbol + " " + d.BookingAmount.Value.ToString("N0") : "—")</td>
+                            <td>@(d.ReceivedAmount.HasValue ? app.CurrencySymbol + " " + d.ReceivedAmount.Value.ToString("N0") : "—")</td>
+                            <td class="@(balance > 0 ? "text-danger fw-medium" : "text-success fw-medium")">
+                                @app.CurrencySymbol @balance.ToString("N0")
+                            </td>
+                            <td>
+                                @if (d.ProjectEntity != null)
+                                {
+                                    <span class="badge-soft-primary">@d.ProjectEntity.Name</span>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(d.Project))
+                                {
+                                    <span class="text-muted">@d.Project</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (d.PropertyEntity != null)
+                                {
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold">Unit @d.PropertyEntity.UnitNumber</span>
+                                        @if (!string.IsNullOrWhiteSpace(d.PropertyEntity.Title))
+                                        {
+                                            <small class="text-muted">@d.PropertyEntity.Title</small>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>
+                                @(d.BHK ?? d.PropertyEntity?.BHK ?? "—")
+                            </td>
+
+                            <td>
+                                @(d.Location ?? d.PropertyEntity?.Location ?? "—")
+                            </td>
+
+                            <td>
+                                @(d.City ?? d.PropertyEntity?.City ?? "—")
+                            </td>
+
+                            <td>
+                                @{
+                                    var area = d.AreaSqft
+                                        ?? d.PropertyEntity?.CarpetArea
+                                        ?? d.PropertyEntity?.BuiltUpArea;
+                                }
+                                @(area.HasValue
+                                    ? area.Value.ToString("N0") + " sqft"
+                                    : "—")
+                            </td>
+                            <td>@(d.ExpectedCloseDate?.ToString("dd MMM yy") ?? "—")</td>
+                            <td>@(d.ClosedAt?.ToString("dd MMM yy, hh:mm tt") ?? "—")</td>
+                            <td>@(d.OwnerDisplayName ?? "—")</td>
+                            <td>
+                                @if (d.Status == "Won") { <span class="badge-soft-success">Won</span> }
+                                else if (d.Status == "Lost") { <span class="badge-soft-warning">Lost</span> }
+                                else { <span class="badge-soft-primary">Open</span> }
+                            </td>
+                            <td class="cell-truncate" title="@d.Tags">@(d.Tags ?? "—")</td>
+                            <td class="cell-truncate" title="@d.Notes">@(d.Notes ?? "—")</td>
+                            <td class="text-muted" title="@Format.Ago(d.CreatedAt)">
+                                @Format.Stamp(d.CreatedAt, app.TimeZone, "dd MMM yyyy, hh:mm tt")
+                            </td>
+                            <td class="text-muted" title="@Format.Ago(d.UpdatedAt)">
+                                @Format.Stamp(d.UpdatedAt, app.TimeZone, "dd MMM yyyy, hh:mm tt")
+                            </td>
+                            <td class="sticky-col-right text-center">
+                                <button class="btn btn-sm btn-link text-primary p-1 btn-edit-deal"
+                                        data-deal='@DealJson(d)'
+                                        data-bs-toggle="modal" data-bs-target="#editDealModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-link text-danger p-1 btn-delete-deal"
+                                        data-id="@d.Id" data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                                        data-bs-toggle="modal" data-bs-target="#deleteDealModal">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Deals.Any())
+                    {
+                       <tr><td colspan="21" class="text-center py-5 text-muted">
+                            <i class="bi bi-briefcase fs-2 d-block mb-2"></i>No deals found.
+                        </td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <div class="text-muted small">Showing @(firstRow)–@(lastRow) of @Model.FilteredCount</div>
+            <div class="d-flex align-items-center gap-2">
+                <a class="btn btn-sm btn-outline-secondary @(Model.Page <= 1 ? "disabled" : "")"
+                   asp-action="Index" asp-all-route-data="Rd(Model.Page - 1)"><i class="bi bi-chevron-left"></i></a>
+                <span class="small text-muted">Page @Model.Page / @totalPages</span>
+                <a class="btn btn-sm btn-outline-secondary @(Model.Page >= totalPages ? "disabled" : "")"
+                   asp-action="Index" asp-all-route-data="Rd(Model.Page + 1)"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_CreateDealModal" />
+<partial name="_EditDealModal" />
+<partial name="_DeleteDealModal" />
+
+@section Scripts {
+    <script>
+        // ---------- Edit / Delete single ----------
+        document.addEventListener('click', (e) => {
+            const del = e.target.closest('.btn-delete-deal');
+            if (del) {
+                document.getElementById('delete-deal-id').value = del.dataset.id;
+                document.getElementById('delete-deal-title').textContent = del.dataset.title || 'this deal';
+                return;
+            }
+
+            const btn = e.target.closest('.btn-edit-deal');
+            if (!btn) return;
+
+            const d = JSON.parse(btn.dataset.deal);
+            const form = document.querySelector('#editDealModal form');
+            if (!form) return;
+
+            // Bind posted fields by their actual form name, not guessed element IDs.
+            const fieldMap = {
+                Id: 'Id',
+                LeadId: 'LeadId',
+                Stage: 'Stage',
+                Value: 'Value',
+                BookingAmount: 'BookingAmount',
+                ReceivedAmount: 'ReceivedAmount',
+                ExpectedCloseDateStr: 'ExpectedCloseDate',
+                Status: 'Status',
+                OwnerDisplayName: 'OwnerDisplayName',
+                Tags: 'Tags',
+                Notes: 'Notes'
+            };
+
+            Object.entries(fieldMap).forEach(([jsonKey, fieldName]) => {
+                const field = form.querySelector(`[name="${fieldName}"]`);
+                if (!field) return;
+
+                field.value = d[jsonKey] ?? '';
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+                field.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+
+            // Keep Project and Property independent. Never derive one picker from the other.
+            const editProjectPicker = form.querySelector('[name="ProjectId"]');
+            const editPropertyPicker = form.querySelector('[name="PropertyId"]');
+
+            if (editProjectPicker) {
+                editProjectPicker.value = d.ProjectId == null ? '' : String(d.ProjectId);
+                editProjectPicker.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            if (editPropertyPicker) {
+                editPropertyPicker.value = d.PropertyId == null ? '' : String(d.PropertyId);
+                editPropertyPicker.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+
+                // ═══════════════════════════════════════════════════════
+        // Project + Property picker — INDEPENDENT, no filtering
+        // ═══════════════════════════════════════════════════════
+        function initPropertyPicker(cfg) {
+            const picker   = document.getElementById(cfg.pickerId);
+            const preview  = document.getElementById(cfg.previewId);
+            const clearBtn = document.getElementById(cfg.clearId);
+            const projSel  = document.getElementById(cfg.projectPickerId);
+            if (!picker || !preview) return;
+
+            function setText(id, v) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = (v && v !== 'null') ? v : '—';
+            }
+            function fmtMoney(v) {
+                if (v == null || v === '' || v === 'null') return '—';
+                const n = Number(v);
+                if (isNaN(n)) return '—';
+                return '₹' + n.toLocaleString('en-IN');
+            }
+
+            // ═══ Property → preview card + auto-fill ═══
+            function showPropertyPreview() {
+                const opt = picker.selectedOptions[0];
+                if (!opt || !opt.value) { preview.classList.add('d-none'); return; }
+
+                const d = opt.dataset;
+                setText(cfg.fieldPrefix + 'Title',  d.title || opt.textContent.trim());
+                setText(cfg.fieldPrefix + 'Sub',    (d.unit ? 'Unit ' + d.unit : '') + (d.type ? ' · ' + d.type : ''));
+                setText(cfg.fieldPrefix + 'Status', d.status || '—');
+                setText(cfg.fieldPrefix + 'Project', d.project || '—');
+                setText(cfg.fieldPrefix + 'Bhk',    d.bhk || '—');
+                setText(cfg.fieldPrefix + 'City',   d.city || '—');
+                setText(cfg.fieldPrefix + 'Location', d.location || '—');
+                setText(cfg.fieldPrefix + 'Carpet', d.carpet ? d.carpet + ' ' + (d.areaunit || 'sqft') : '—');
+                setText(cfg.fieldPrefix + 'Builtup', d.builtup ? d.builtup + ' ' + (d.areaunit || 'sqft') : '—');
+                setText(cfg.fieldPrefix + 'Price',  fmtMoney(d.price));
+
+                preview.classList.remove('d-none');
+            }
+
+            function fillFormFromProperty() {
+                const opt = picker.selectedOptions[0];
+                if (!opt || !opt.value) return;
+                const d = opt.dataset;
+                const setVal = (name, v) => {
+                    const el = cfg.form.querySelector(`[name="${name}"]`);
+                    if (el && v != null && v !== '') el.value = v;
+                };
+                setVal('Project',  d.project);
+                setVal('BHK',      d.bhk);
+                setVal('Location', d.location);
+                setVal('City',     d.city);
+                setVal('AreaSqft', d.carpet || d.builtup);
+                const valueInput = cfg.form.querySelector('[name="Value"]');
+                if (valueInput && d.price && !valueInput.value) {
+                    valueInput.value = d.price;
+                }
+            }
+
+            picker.addEventListener('change', () => {
+                showPropertyPreview();
+                fillFormFromProperty();
+            });
+            clearBtn?.addEventListener('click', () => {
+                picker.value = '';
+                preview.classList.add('d-none');
+            });
+
+            // ═══ Project → auto-fill project details (does NOT touch property list) ═══
+            if (projSel) {
+                projSel.addEventListener('change', () => {
+                    const opt = projSel.selectedOptions[0];
+                    if (!opt || !opt.value) return;
+                    const projName = opt.textContent.trim();
+                    const projInput = cfg.form.querySelector('[name="Project"]');
+                    if (projInput && !projInput.value) projInput.value = projName;
+                });
+            }
+
+            if (cfg.modal) {
+                cfg.modal.addEventListener('shown.bs.modal', showPropertyPreview);
+            }
+        }
+
+                // Init CREATE modal pickers
+        initPropertyPicker({
+            pickerId:        'createPropertyPicker',
+            projectPickerId: 'createProjectPicker',
+            previewId:       'createPropertyPreview',
+            clearId:         'ppcClear',
+            fieldPrefix:     'ppc',
+            form:            document.querySelector('#addDealModal form'),
+            modal:           document.getElementById('addDealModal')
+        });
+
+        // Init EDIT modal pickers
+        initPropertyPicker({
+            pickerId:        'editPropertyPicker',
+            projectPickerId: 'editProjectPicker',
+            previewId:       'editPropertyPreview',
+            clearId:         'eppcClear',
+            fieldPrefix:     'eppc',
+            form:            document.querySelector('#editDealModal form'),
+            modal:           document.getElementById('editDealModal')
+        });
+        </script>
+        <style>
+
+/* ================================
+   DEALS TABLE - PREMIUM DESIGN
+================================ */
+
+.deals-table-wrap {
+    width: 100%;
+    margin-top: 18px;
+}
+
+.table-container {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #dbe3ed;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.table-scroll-area {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 650px;
+}
+
+.premium-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+    font-size: 13px;
+    color: #334155;
+}
+
+/* All headers same color and alignment */
+.premium-table thead th {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-align: center !important;
+    vertical-align: middle;
+    white-space: nowrap;
+    padding: 14px 12px;
+    border: 1px solid #475569;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+/* Header links */
+.premium-table thead th a,
+.premium-table thead th .sort-header {
+    color: #ffffff !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.premium-table thead th a:hover {
+    color: #93c5fd !important;
+}
+
+/* All body cells */
+.premium-table tbody td {
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 12px 12px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    background: #ffffff;
+}
+
+/* Alternate rows */
+.premium-table tbody tr:nth-child(even) td {
+    background: #f8fafc;
+}
+
+/* Hover effect */
+.premium-table tbody tr:hover td {
+    background: #eff6ff !important;
+    transition: background 0.15s ease;
+}
+
+/* Sticky first column */
+.premium-table .sticky-col-left {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    min-width: 190px;
+    border-right: 2px solid #cbd5e1;
+}
+
+/* Sticky first column header */
+.premium-table thead .sticky-col-left {
+    z-index: 8;
+    background: #1e293b !important;
+}
+
+/* Sticky action column */
+.premium-table .sticky-col-right {
+    position: sticky;
+    right: 0;
+    z-index: 3;
+    min-width: 100px;
+    border-left: 2px solid #cbd5e1;
+}
+
+/* Sticky action header */
+.premium-table thead .sticky-col-right {
+    z-index: 8;
+    background: #1e293b !important;
+}
+
+/* Text truncation */
+.premium-table .cell-truncate {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badges */
+.premium-table .badge-soft-primary,
+.premium-table .badge-soft-success,
+.premium-table .badge-soft-warning,
+.premium-table .pill {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Action buttons */
+.premium-table .sticky-col-right button {
+    margin: 0 3px;
+}
+
+/* Scrollbar */
+.table-scroll-area::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+.table-scroll-area::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.table-scroll-area::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 10px;
+}
+
+.table-scroll-area::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+        </style>
+}

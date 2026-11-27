@@ -30,6 +30,9 @@ public class DealsController : Controller
         if (!string.IsNullOrWhiteSpace(search))
             q = q.Where(d =>
                 (d.Project != null && d.Project.Contains(search)) ||
+                (d.ProjectEntity != null && d.ProjectEntity.Name.Contains(search)) ||
+                (d.PropertyEntity != null &&
+                    (d.PropertyEntity.Title != null && d.PropertyEntity.Title.Contains(search))) ||
                 (d.Location != null && d.Location.Contains(search)) ||
                 (d.Notes != null && d.Notes.Contains(search)) ||
                 (d.Lead != null && d.Lead.FullName.Contains(search)));
@@ -63,9 +66,9 @@ public class DealsController : Controller
         string? stage, string? search, string? owner,
         string? status = "All",
         string sortBy = "UpdatedAt", string sortOrder = "desc",
-        int page = 1, int pageSize = 25)
+        int page = 1, int pageSize = 10)
     {
-        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 25;
+        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 10;
 
         var query = FilteredQuery(stage, status, search, owner, sortBy, sortOrder);
 
@@ -75,6 +78,9 @@ public class DealsController : Controller
 
         var pageDeals = await query
             .Include(d => d.Lead)
+            .Include(d => d.ProjectEntity)
+            .Include(d => d.PropertyEntity)
+                .ThenInclude(p => p.Project)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -132,6 +138,9 @@ public class DealsController : Controller
                 leadsWithDeals.Contains(l.Id)
             ))
             .ToList();
+        
+        var projectOptions = await LoadProjectOptionsAsync();
+        var propertyOptions = await LoadPropertyOptionsAsync();    
 
         var vm = new DealListViewModel
         {
@@ -152,7 +161,9 @@ public class DealsController : Controller
             Deals = pageDeals,
             AllOwners = owners,
             AllTags = tagSet.OrderBy(x => x).ToList(),
-            AllLeads = leadOptions
+            AllLeads = leadOptions,
+            AllProjects = projectOptions,
+            AllProperties = propertyOptions,
         };
 
         return View(vm);
@@ -197,11 +208,22 @@ public class DealsController : Controller
     // ---- CREATE ----
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Deal deal)
+    public async Task<IActionResult> Create(Deal deal, int? ProjectId, int? PropertyId)
     {
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Please fill all required fields correctly.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Project and Property are independent selections.
+        // A standalone Property must not implicitly overwrite ProjectId.
+        var selectionsValid = await ApplyProjectPropertySelectionsAsync(
+            deal, ProjectId, PropertyId, usePropertyPriceWhenValueMissing: true);
+
+        if (!selectionsValid)
+        {
+            TempData["Error"] = "The selected project or property is no longer available. Please refresh and try again.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -228,22 +250,37 @@ public class DealsController : Controller
     // ---- EDIT ----
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Deal deal)
+    public async Task<IActionResult> Edit(Deal deal, int? ProjectId, int? PropertyId)
     {
-        var existing = await _context.Deals.FindAsync(deal.Id);
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Please check the submitted deal details and try again.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var existing = await _context.Deals
+            .FirstOrDefaultAsync(d => d.Id == deal.Id);
+
         if (existing == null)
         {
             TempData["Error"] = "Deal not found.";
             return RedirectToAction(nameof(Index));
         }
 
+        // Resolve both selectors independently and refresh the Property snapshot.
+        // Do not copy null BHK/Location/City/Area values from the edit form:
+        // those fields are not posted by _EditDealModal.
+        var selectionsValid = await ApplyProjectPropertySelectionsAsync(
+            existing, ProjectId, PropertyId);
+
+        if (!selectionsValid)
+        {
+            TempData["Error"] = "The selected project or property is no longer available. Please refresh and try again.";
+            return RedirectToAction(nameof(Index));
+        }
+
         existing.LeadId = deal.LeadId;
         existing.Stage = deal.Stage;
-        existing.Project = deal.Project;
-        existing.BHK = deal.BHK;
-        existing.Location = deal.Location;
-        existing.City = deal.City;
-        existing.AreaSqft = deal.AreaSqft;
         existing.Value = deal.Value;
         existing.BookingAmount = deal.BookingAmount;
         existing.ReceivedAmount = deal.ReceivedAmount;
@@ -267,6 +304,71 @@ public class DealsController : Controller
 
         TempData["Success"] = "Deal updated successfully!";
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Applies the independently selected Project and Property to a Deal.
+    /// ProjectId always comes from the Project dropdown; PropertyId always
+    /// comes from the Property dropdown. A Property's own ProjectId is never
+    /// used to silently replace the user's Project selection.
+    /// </summary>
+    private async Task<bool> ApplyProjectPropertySelectionsAsync(
+        Deal target,
+        int? projectId,
+        int? propertyId,
+        bool usePropertyPriceWhenValueMissing = false)
+    {
+        var selectedProject = projectId.HasValue
+            ? await _context.Projects
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == projectId.Value &&
+                    (p.IsActive || _context.Deals.Any(d => d.ProjectId == p.Id)))
+            : null;
+
+        if (projectId.HasValue && selectedProject == null)
+            return false;
+
+        var selectedProperty = propertyId.HasValue
+            ? await _context.Properties
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == propertyId.Value &&
+                    (p.IsActive || _context.Deals.Any(d => d.PropertyId == p.Id)))
+            : null;
+
+        if (propertyId.HasValue && selectedProperty == null)
+            return false;
+
+        // Independent Project relationship + display snapshot.
+        target.ProjectId = projectId;
+        target.Project = selectedProject?.Name;
+
+        // Property relationship + denormalized display snapshot.
+        target.PropertyId = propertyId;
+
+        if (selectedProperty != null)
+        {
+            target.BHK = selectedProperty.BHK;
+            target.Location = selectedProperty.Location;
+            target.City = selectedProperty.City;
+            target.AreaSqft = selectedProperty.CarpetArea ?? selectedProperty.BuiltUpArea;
+
+            if (usePropertyPriceWhenValueMissing &&
+                target.Value <= 0 &&
+                selectedProperty.TotalPrice > 0)
+            {
+                target.Value = (decimal)selectedProperty.TotalPrice;
+            }
+        }
+        else
+        {
+            // Clearing Property must also clear its old snapshot values.
+            target.BHK = null;
+            target.Location = null;
+            target.City = null;
+            target.AreaSqft = null;
+        }
+
+        return true;
     }
 
     // ---- DELETE ----
@@ -382,4 +484,111 @@ public class DealsController : Controller
         if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
         return utc.ToString("dd MMM");
     }
+
+    // ═══════════════════════════════════════════════════════
+    // HELPERS — options for Create/Edit modals
+    // ═══════════════════════════════════════════════════════
+    private async Task<List<ProjectOption>> LoadProjectOptionsAsync(CancellationToken ct = default)
+    {
+        return await _context.Projects.AsNoTracking()
+            // Keep inactive records that are already referenced by a Deal so
+            // the edit modal can display and preserve existing associations.
+            .Where(p => p.IsActive || _context.Deals.Any(d => d.ProjectId == p.Id))
+            .OrderBy(p => p.Name)
+            .Select(p => new ProjectOption { Id = p.Id, Name = p.Name })
+            .ToListAsync(ct);
+    }
+
+    private async Task<List<PropertyOption>> LoadPropertyOptionsAsync(CancellationToken ct = default)
+    {
+        return await _context.Properties.AsNoTracking()
+            // Keep inactive records that are already referenced by a Deal so
+            // the edit modal can display and preserve existing associations.
+            .Where(p => p.IsActive || _context.Deals.Any(d => d.PropertyId == p.Id))
+            .OrderBy(p => p.UnitNumber)
+            .Select(p => new PropertyOption
+            {
+                Id = p.Id,
+                UnitNumber = p.UnitNumber,
+                Title = p.Title,
+                ProjectId = p.ProjectId,
+                ProjectName = p.Project != null ? p.Project.Name : null,
+                BHK = p.BHK,
+                City = p.City,
+                Location = p.Location,
+                TotalPrice = p.TotalPrice,
+                CarpetArea = p.CarpetArea,
+                BuiltUpArea = p.BuiltUpArea,
+                Status = p.Status,
+                PropertyType = p.PropertyType,
+                AreaUnit = p.AreaUnit
+            })
+            .ToListAsync(ct);
+    }   
+
+    [HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> ToggleClose(int id, string password)
+{
+    const string closeDealPassword = "1234";
+
+    if (!string.Equals(password, closeDealPassword, StringComparison.Ordinal))
+    {
+        return BadRequest(new
+        {
+            ok = false,
+            message = "Incorrect password."
+        });
+    }
+
+    var deal = await _context.Deals.FindAsync(id);
+
+    if (deal == null)
+    {
+        return NotFound(new
+        {
+            ok = false,
+            message = "Deal not found."
+        });
+    }
+
+    bool isClosed = deal.ClosedAt.HasValue
+                    || deal.Status == "Won"
+                    || deal.Status == "Lost";
+
+    if (isClosed)
+    {
+        // Reopen deal
+        deal.Status = "Open";
+        deal.ClosedAt = null;
+    }
+    else
+    {
+        // Close deal
+        deal.Status = "Won";
+        deal.ClosedAt = DateTime.UtcNow;
+    }
+
+    deal.UpdatedAt = DateTime.UtcNow;
+
+    await _context.SaveChangesAsync();
+
+    await _activity.LogAsync(
+        entity: "Deal",
+        action: isClosed ? "Reopened" : "Closed",
+        title: deal.Project ?? $"Deal #{deal.Id}",
+        detail: isClosed ? "Deal reopened" : $"Deal closed - ₹{deal.Value:N0}",
+        url: Url.Action("Index", "Deals"),
+        entityId: deal.Id
+    );
+
+    return Json(new
+    {
+        ok = true,
+        message = isClosed
+            ? "Deal reopened successfully."
+            : "Deal closed successfully."
+    });
+}
+
 }

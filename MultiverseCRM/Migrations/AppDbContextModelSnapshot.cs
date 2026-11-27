@@ -156,6 +156,18 @@ namespace MultiverseCRM.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PropertyEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PropertyId1")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("ReceivedAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -184,6 +196,12 @@ namespace MultiverseCRM.Migrations
                     b.HasIndex("LeadId");
 
                     b.HasIndex("OwnerUserName");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("PropertyEntityId");
+
+                    b.HasIndex("PropertyId1");
 
                     b.HasIndex("Stage");
 
@@ -809,10 +827,6 @@ namespace MultiverseCRM.Migrations
 
                     b.HasIndex("City");
 
-                    b.HasIndex("DealId")
-                        .IsUnique()
-                        .HasFilter("[DealId] IS NOT NULL");
-
                     b.HasIndex("LeadId");
 
                     b.HasIndex("ProjectId");
@@ -923,7 +937,25 @@ namespace MultiverseCRM.Migrations
                         .HasForeignKey("LeadId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("MultiverseCRM.Models.Project", "ProjectEntity")
+                        .WithMany()
+                        .HasForeignKey("ProjectId");
+
+                    b.HasOne("MultiverseCRM.Models.Property", "PropertyEntity")
+                        .WithMany()
+                        .HasForeignKey("PropertyEntityId");
+
+                    b.HasOne("MultiverseCRM.Models.Property", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId1");
+
                     b.Navigation("Lead");
+
+                    b.Navigation("ProjectEntity");
+
+                    b.Navigation("Property");
+
+                    b.Navigation("PropertyEntity");
                 });
 
             modelBuilder.Entity("MultiverseCRM.Models.Lead", b =>
@@ -971,10 +1003,6 @@ namespace MultiverseCRM.Migrations
 
             modelBuilder.Entity("MultiverseCRM.Models.Property", b =>
                 {
-                    b.HasOne("MultiverseCRM.Models.Deal", null)
-                        .WithOne("Property")
-                        .HasForeignKey("MultiverseCRM.Models.Property", "DealId");
-
                     b.HasOne("MultiverseCRM.Models.Lead", null)
                         .WithMany("PropertiesBooked")
                         .HasForeignKey("LeadId");
@@ -995,11 +1023,6 @@ namespace MultiverseCRM.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Property");
-                });
-
-            modelBuilder.Entity("MultiverseCRM.Models.Deal", b =>
-                {
                     b.Navigation("Property");
                 });
 
