@@ -131,6 +131,147 @@
     </div>
 </form>
 
+
+<!-- MOBILE DEAL CARDS -->
+<div class="mobile-deal-cards">
+    @foreach (var d in Model.Deals)
+    {
+        var balance = d.Value - (d.ReceivedAmount ?? 0);
+        var isClosed = d.ClosedAt.HasValue || d.Status == "Won" || d.Status == "Lost";
+
+      var property = Model.AllProperties .FirstOrDefault(p => p.Id == d.PropertyId);
+        
+        <div class="mobile-deal-card">
+            <div class="mobile-card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="lead-avatar">
+                        @Format.Initials(d.Lead?.FullName ?? d.Project ?? "D")
+                    </span>
+
+                    <div>
+                        <div class="fw-bold text-dark">
+                            @(d.Project ?? $"Deal #{d.Id}")
+                        </div>
+                        <small class="text-muted">
+                            @(d.Lead?.FullName ?? "No lead")
+                        </small>
+                    </div>
+                </div>
+
+                <span class="pill"
+                      style="--pill:@stageColor.GetValueOrDefault(d.Stage, "#64748b")">
+                    @d.Stage
+                </span>
+            </div>
+
+            <div class="mobile-card-value">
+                <small class="text-muted">Deal Value</small>
+                <div class="fw-bold fs-5">
+                    @app.CurrencySymbol @d.Value.ToString("N0")
+                </div>
+            </div>
+
+            <div class="mobile-card-grid">
+                <div>
+                    <small>Booking</small>
+                    <strong>@(d.BookingAmount.HasValue ? app.CurrencySymbol + " " + d.BookingAmount.Value.ToString("N0") : "—")</strong>
+                </div>
+
+                <div>
+                    <small>Received</small>
+                    <strong>@(d.ReceivedAmount.HasValue ? app.CurrencySymbol + " " + d.ReceivedAmount.Value.ToString("N0") : "—")</strong>
+                </div>
+
+                <div>
+                    <small>Balance</small>
+                    <strong class="@(balance > 0 ? "text-danger" : "text-success")">
+                        @app.CurrencySymbol @balance.ToString("N0")
+                    </strong>
+                </div>
+
+                <div>
+                    <small>Property</small>
+                    <strong>
+                        @(property != null ? "Unit " + property.UnitNumber : d.PropertyId.HasValue ? "Property #" + d.PropertyId : "—")
+                    </strong>
+                </div>
+
+                <div>
+                    <small>BHK</small>
+                    <strong>@(d.BHK ?? property?.BHK ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Area</small>
+                    <strong>
+                        @(d.AreaSqft.HasValue
+                            ? d.AreaSqft.Value.ToString("N0") + " sqft"
+                            : property?.CarpetArea?.ToString("N0") + " sqft" ?? "—")
+                    </strong>
+                </div>
+
+                <div>
+                    <small>City</small>
+                    <strong>@(d.City ?? property?.City ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Owner</small>
+                    <strong>@(d.OwnerDisplayName ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Expected Close</small>
+                    <strong>@(d.ExpectedCloseDate?.ToString("dd MMM yyyy") ?? "—")</strong>
+                </div>
+
+                <div>
+                    <small>Status</small>
+                    <strong class="@(d.Status == "Won" ? "text-success" : d.Status == "Lost" ? "text-danger" : "text-primary")">
+                        @d.Status
+                    </strong>
+                </div>
+            </div>
+
+            <div class="mobile-card-footer">
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary btn-edit-deal"
+                        data-deal='@DealJson(d)'
+                        data-bs-toggle="modal"
+                        data-bs-target="#editDealModal">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-success btn-toggle-deal"
+                        data-id="@d.Id"
+                        data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                        data-closed="@isClosed.ToString().ToLowerInvariant()">
+                    <i class="bi @(isClosed ? "bi-arrow-counterclockwise" : "bi-check-circle")"></i>
+                    @(isClosed ? "Reopen" : "Close")
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger btn-delete-deal"
+                        data-id="@d.Id"
+                        data-title="@(d.Project ?? $"Deal #{d.Id}")"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteDealModal">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!Model.Deals.Any())
+    {
+        <div class="text-center text-muted py-5">
+            No deals found.
+        </div>
+    }
+</div>
+
+
 <!-- Scroll-locked table with all fields -->
 <div class="deals-table-wrap">
     <div class="table-container">
@@ -721,5 +862,100 @@
     background: #64748b;
 }
 
-        </style>
+
+/* Mobile cards hidden on desktop */
+.mobile-deal-cards {
+    display: none;
+}
+
+/* Mobile responsive layout */
+@@media (max-width: 767px) {
+
+    .mobile-deal-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 15px;
+    }
+
+    /* Hide desktop table */
+    .deals-table-wrap .table-scroll-area {
+        display: none;
+    }
+
+    .mobile-deal-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .mobile-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .mobile-card-header .pill {
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .mobile-card-value {
+        padding: 13px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .mobile-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px 10px;
+        padding: 14px 0;
+    }
+
+    .mobile-card-grid div {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        gap: 3px;
+    }
+
+    .mobile-card-grid small {
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    .mobile-card-grid strong {
+        font-size: 13px;
+        color: #1e293b;
+        overflow-wrap: anywhere;
+    }
+
+    .mobile-card-footer {
+        display: flex;
+        gap: 7px;
+        padding-top: 12px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .mobile-card-footer button {
+        flex: 1;
+        font-size: 12px;
+        padding: 7px 4px;
+    }
+
+    /* Keep pagination visible */
+    .table-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px;
+    }
+}
+</style>
 }
