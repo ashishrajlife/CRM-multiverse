@@ -82,6 +82,48 @@
             border-color: rgba(92,209,255,.35);
             box-shadow: 0 10px 26px -12px rgba(92,209,255,.7);
         }
+        /* Footer */
+    .app-footer {
+        flex-shrink: 0;
+        border-top: 1px solid rgba(15,23,42,.07);
+        background: #ffffff;
+        padding: 0.65rem clamp(1rem, 2.2vw, 2.5rem);
+        padding-bottom: calc(0.65rem + env(safe-area-inset-bottom));
+    }
+    .app-footer-inner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        letter-spacing: 0.005em;
+    }
+    .app-footer-brand {
+        font-weight: 700;
+        color: var(--ink);
+        font-family: var(--font-display);
+        letter-spacing: -0.01em;
+    }
+    .app-footer-sep { opacity: 0.5; }
+    .app-footer-year {
+        margin-left: 0.25rem;
+        opacity: 0.75;
+        font-variant-numeric: tabular-nums;
+    }
+
+    [data-theme="dark"] .app-footer {
+        background: #0E1A28;
+        border-top-color: rgba(255,255,255,.06);
+    }
+    [data-theme="dark"] .app-footer-inner { color: var(--ink-soft); }
+    [data-theme="dark"] .app-footer-brand { color: var(--ink); }
+
+    @@media (max-width: 575.98px) {
+        .app-footer { padding: 0.55rem 1rem calc(0.55rem + env(safe-area-inset-bottom)); }
+        .app-footer-inner { font-size: 0.72rem; }
+    }
     </style>
 </head>
 <body>
@@ -200,6 +242,15 @@
             <main class="page-content">
                 @RenderBody()
             </main>
+
+            <footer class="app-footer">
+                <div class="app-footer-inner">
+                    <span class="app-footer-brand">AshishRaj&amp;Co</span>
+                    <span class="app-footer-sep">·</span>
+                    <span class="app-footer-text">© All rights reserved</span>
+                    <span class="app-footer-year">@DateTime.Now.Year</span>
+                </div>
+            </footer>
         </div>
     </div>
 

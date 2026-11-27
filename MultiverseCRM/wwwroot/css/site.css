@@ -1363,9 +1363,9 @@ a { text-underline-offset: 3px; }
     border-radius: var(--radius);
     box-shadow: var(--shadow-glass);
     overflow: hidden;
-    height: calc(100dvh - 20rem);
-    min-height: 28rem;
-    max-height: 60rem;
+    height: calc(100dvh - 14rem);
+    min-height: 45rem;
+    max-height: 68rem;
 }
 .fu-table-scroll {
     flex: 1 1 auto;
@@ -2426,7 +2426,7 @@ html, body {
     flex: 1 1 auto;
     height: auto;
     max-height: none;
-    min-height: 35rem;
+    min-height: 43rem;
 }
 .leads-page > .table-container > .table-scroll-area {
     flex: 1 1 auto;
