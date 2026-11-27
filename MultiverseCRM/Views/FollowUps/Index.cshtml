@@ -122,6 +122,36 @@
 
 <!-- ═══ STAT CARDS ═══ -->
 <div class="row g-2 g-lg-3 mb-4">
+     <div class="col-6 col-xl-3">
+        <a href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#4f46e5">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="kpi-icon"><i class="bi bi-list-check"></i></div>
+                    <div class="min-w-0">
+                        <div class="text-muted small fw-medium text-truncate">All</div>
+                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.AllCount</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+     <div class="col-6 col-xl-3">
+        <a href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
+           class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#f59e0b">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="kpi-icon"><i class="bi bi-alarm-fill"></i></div>
+                    <div class="min-w-0">
+                        <div class="text-muted small fw-medium text-truncate">Due today</div>
+                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.TodayCount</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
     <div class="col-6 col-xl-3">
         <a href="@Url.Action("Index", new { tab = "overdue", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
            class="text-decoration-none">
@@ -136,20 +166,7 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-xl-3">
-        <a href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
-           class="text-decoration-none">
-            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#f59e0b">
-                <div class="card-body d-flex align-items-center gap-3 p-3">
-                    <div class="kpi-icon"><i class="bi bi-alarm-fill"></i></div>
-                    <div class="min-w-0">
-                        <div class="text-muted small fw-medium text-truncate">Due today</div>
-                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.TodayCount</div>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
+   
     <div class="col-6 col-xl-3">
         <a href="@Url.Action("Index", new { tab = "upcoming", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
            class="text-decoration-none">
@@ -164,24 +181,24 @@
             </div>
         </a>
     </div>
-    <div class="col-6 col-xl-3">
-        <a href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"
-           class="text-decoration-none">
-            <div class="card border-0 shadow-sm h-100 card-hover kpi-card" style="--c:#4f46e5">
-                <div class="card-body d-flex align-items-center gap-3 p-3">
-                    <div class="kpi-icon"><i class="bi bi-list-check"></i></div>
-                    <div class="min-w-0">
-                        <div class="text-muted small fw-medium text-truncate">All</div>
-                        <div class="fs-2 fw-bold" style="color:var(--ink);">@Model.AllCount</div>
-                    </div>
-                </div>
-            </div>
-        </a>
-    </div>
 </div>
 
 <!-- ═══ TABS ═══ -->
 <ul class="nav premium-tabs mb-3">
+     <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "all" ? "active" : "")"
+           href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
+            <i class="bi bi-collection me-1"></i>All
+            <span class="badge bg-secondary ms-1">@Model.AllCount</span>
+        </a>
+    </li>
+      <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "today" ? "active" : "")"
+           href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
+            <i class="bi bi-alarm me-1"></i>Today
+            <span class="badge bg-warning text-dark ms-1">@Model.TodayCount</span>
+        </a>
+    </li>
     <li class="nav-item">
         <a class="nav-link @(Model.ActiveTab == "overdue" ? "active" : "")"
            href="@Url.Action("Index", new { tab = "overdue", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
@@ -190,24 +207,10 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link @(Model.ActiveTab == "today" ? "active" : "")"
-           href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
-            <i class="bi bi-alarm me-1"></i>Today
-            <span class="badge bg-warning text-dark ms-1">@Model.TodayCount</span>
-        </a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link @(Model.ActiveTab == "upcoming" ? "active" : "")"
            href="@Url.Action("Index", new { tab = "upcoming", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
             <i class="bi bi-calendar-week me-1"></i>Upcoming
             <span class="badge bg-info text-dark ms-1">@Model.UpcomingCount</span>
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link @(Model.ActiveTab == "all" ? "active" : "")"
-           href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
-            <i class="bi bi-collection me-1"></i>All
-            <span class="badge bg-secondary ms-1">@Model.AllCount</span>
         </a>
     </li>
 </ul>

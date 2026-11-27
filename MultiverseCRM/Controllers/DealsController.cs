@@ -66,9 +66,9 @@ public class DealsController : Controller
         string? stage, string? search, string? owner,
         string? status = "All",
         string sortBy = "UpdatedAt", string sortOrder = "desc",
-        int page = 1, int pageSize = 25)
+        int page = 1, int pageSize = 10)
     {
-        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 25;
+        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 10;
 
         var query = FilteredQuery(stage, status, search, owner, sortBy, sortOrder);
 
