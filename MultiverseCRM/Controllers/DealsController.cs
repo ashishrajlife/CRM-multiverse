@@ -132,6 +132,9 @@ public class DealsController : Controller
                 leadsWithDeals.Contains(l.Id)
             ))
             .ToList();
+        
+        var projectOptions = await LoadProjectOptionsAsync();
+        var propertyOptions = await LoadPropertyOptionsAsync();    
 
         var vm = new DealListViewModel
         {
@@ -152,7 +155,9 @@ public class DealsController : Controller
             Deals = pageDeals,
             AllOwners = owners,
             AllTags = tagSet.OrderBy(x => x).ToList(),
-            AllLeads = leadOptions
+            AllLeads = leadOptions,
+            AllProjects = projectOptions,
+            AllProperties = propertyOptions,
         };
 
         return View(vm);
@@ -381,5 +386,42 @@ public class DealsController : Controller
         if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
         if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
         return utc.ToString("dd MMM");
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // HELPERS — options for Create/Edit modals
+    // ═══════════════════════════════════════════════════════
+    private async Task<List<ProjectOption>> LoadProjectOptionsAsync(CancellationToken ct = default)
+    {
+        return await _context.Projects.AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Name)
+            .Select(p => new ProjectOption { Id = p.Id, Name = p.Name })
+            .ToListAsync(ct);
+    }
+
+    private async Task<List<PropertyOption>> LoadPropertyOptionsAsync(CancellationToken ct = default)
+    {
+        return await _context.Properties.AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.UnitNumber)
+            .Select(p => new PropertyOption
+            {
+                Id = p.Id,
+                UnitNumber = p.UnitNumber,
+                Title = p.Title,
+                ProjectId = p.ProjectId,
+                ProjectName = p.Project != null ? p.Project.Name : null,
+                BHK = p.BHK,
+                City = p.City,
+                Location = p.Location,
+                TotalPrice = p.TotalPrice,
+                CarpetArea = p.CarpetArea,
+                BuiltUpArea = p.BuiltUpArea,
+                Status = p.Status,
+                PropertyType = p.PropertyType,
+                AreaUnit = p.AreaUnit
+            })
+            .ToListAsync(ct);
     }
 }

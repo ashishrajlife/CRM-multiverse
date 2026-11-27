@@ -302,5 +302,91 @@
                 el.value = val ?? '';
             }
         });
-    </script>
+
+                // ═══════════════════════════════════════════════════════
+        // Project + Property picker — INDEPENDENT, no filtering
+        // ═══════════════════════════════════════════════════════
+        function initPropertyPicker(cfg) {
+            const picker   = document.getElementById(cfg.pickerId);
+            const preview  = document.getElementById(cfg.previewId);
+            const clearBtn = document.getElementById(cfg.clearId);
+            const projSel  = document.getElementById(cfg.projectPickerId);
+            if (!picker || !preview) return;
+
+            function setText(id, v) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = (v && v !== 'null') ? v : '—';
+            }
+            function fmtMoney(v) {
+                if (v == null || v === '' || v === 'null') return '—';
+                const n = Number(v);
+                if (isNaN(n)) return '—';
+                return '₹' + n.toLocaleString('en-IN');
+            }
+
+            // ═══ Property → preview card + auto-fill ═══
+            function showPropertyPreview() {
+                const opt = picker.selectedOptions[0];
+                if (!opt || !opt.value) { preview.classList.add('d-none'); return; }
+
+                const d = opt.dataset;
+                setText(cfg.fieldPrefix + 'Title',  d.title || opt.textContent.trim());
+                setText(cfg.fieldPrefix + 'Sub',    (d.unit ? 'Unit ' + d.unit : '') + (d.type ? ' · ' + d.type : ''));
+                setText(cfg.fieldPrefix + 'Status', d.status || '—');
+                setText(cfg.fieldPrefix + 'Project', d.project || '—');
+                setText(cfg.fieldPrefix + 'Bhk',    d.bhk || '—');
+                setText(cfg.fieldPrefix + 'City',   d.city || '—');
+                setText(cfg.fieldPrefix + 'Location', d.location || '—');
+                setText(cfg.fieldPrefix + 'Carpet', d.carpet ? d.carpet + ' ' + (d.areaunit || 'sqft') : '—');
+                setText(cfg.fieldPrefix + 'Builtup', d.builtup ? d.builtup + ' ' + (d.areaunit || 'sqft') : '—');
+                setText(cfg.fieldPrefix + 'Price',  fmtMoney(d.price));
+
+                preview.classList.remove('d-none');
+            }
+
+            function fillFormFromProperty() {
+                const opt = picker.selectedOptions[0];
+                if (!opt || !opt.value) return;
+                const d = opt.dataset;
+                const setVal = (name, v) => {
+                    const el = cfg.form.querySelector(`[name="${name}"]`);
+                    if (el && v != null && v !== '') el.value = v;
+                };
+                setVal('Project',  d.project);
+                setVal('BHK',      d.bhk);
+                setVal('Location', d.location);
+                setVal('City',     d.city);
+                setVal('AreaSqft', d.carpet || d.builtup);
+                const valueInput = cfg.form.querySelector('[name="Value"]');
+                if (valueInput && d.price && !valueInput.value) {
+                    valueInput.value = d.price;
+                }
+            }
+
+            picker.addEventListener('change', () => {
+                showPropertyPreview();
+                fillFormFromProperty();
+            });
+            clearBtn?.addEventListener('click', () => {
+                picker.value = '';
+                preview.classList.add('d-none');
+            });
+
+            // ═══ Project → auto-fill project details (does NOT touch property list) ═══
+            if (projSel) {
+                projSel.addEventListener('change', () => {
+                    const opt = projSel.selectedOptions[0];
+                    if (!opt || !opt.value) return;
+                    const projName = opt.textContent.trim();
+                    const projInput = cfg.form.querySelector('[name="Project"]');
+                    if (projInput && !projInput.value) projInput.value = projName;
+                });
+            }
+
+            if (cfg.modal) {
+                cfg.modal.addEventListener('shown.bs.modal', showPropertyPreview);
+            }
+        }
+
+        </script>
 }

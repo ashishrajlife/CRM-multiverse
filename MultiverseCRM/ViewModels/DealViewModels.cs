@@ -27,6 +27,8 @@ public class DealListViewModel
 
     // For the Lead dropdown on Create / Edit
     public List<LeadOption> AllLeads { get; set; } = new();
+        public List<ProjectOption> AllProjects { get; set; } = new();
+    public List<PropertyOption> AllProperties { get; set; } = new();
 }
 
 public record LeadOption(int Id, string Display, bool Assigned);
