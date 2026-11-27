@@ -64,21 +64,21 @@ public class FollowUpsController : Controller
         var today = TodayIst();
 
         var allLeadsWithFollowUp = await _context.Leads
-            .Where(l => l.RemarkDate != null)
-            .AsNoTracking()
-            .Select(l => new
-            {
-                l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
-                l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate
-            })
-            .ToListAsync(ct);
+        .Where(l => l.RemarkDate != null || l.Status == "Follow-up")
+        .AsNoTracking()
+        .Select(l => new
+        {
+            l.Id, l.FullName, l.Phone, l.Email, l.Status, l.Priority,
+            l.Staff, l.Project, l.City, l.LatestRemark, l.RemarkDate
+        })
+        .ToListAsync(ct);
 
-        // A follow-up is overdue from the second calendar day after its
-        // scheduled date. A one-day-late follow-up stays in Today as grace.
         var enriched = allLeadsWithFollowUp.Select(l =>
         {
-            var rd = l.RemarkDate!.Value;
-            var actualDiff = (rd.Date - today).Days;
+            // Agar RemarkDate null hai (sirf Status == Follow-up) → aaj ka maano
+            var rd = l.RemarkDate?.Date ?? today;
+
+            var actualDiff = (rd - today).Days;
             var displayDiff = actualDiff <= -OverdueAfterDays
                 ? actualDiff
                 : Math.Max(actualDiff, 0);
@@ -91,7 +91,6 @@ public class FollowUpsController : Controller
                 DisplayDiff = displayDiff
             };
         }).ToList();
-
         var overdueRows  = enriched.Where(l => l.DisplayDiff < 0).ToList();
         var todayRows    = enriched.Where(l => l.DisplayDiff == 0).ToList();
         var upcomingRows = enriched.Where(l => l.DisplayDiff > 0).ToList();
@@ -153,7 +152,7 @@ public class FollowUpsController : Controller
 
         var vmRows = pageRows.Select(l =>
         {
-            DateTime rd = (DateTime)l.RemarkDate!;
+            DateTime rd = (DateTime?)l.RemarkDate ?? today; 
             int displayDiff = (int)l.DisplayDiff;
 
             string bucket = displayDiff < 0 ? "overdue"
@@ -212,6 +211,7 @@ public class FollowUpsController : Controller
 
             var today = TodayIst();
             lead.RemarkDate = null;
+            lead.Status = "Follow-up Done";
             lead.LatestRemark = $"Follow-up completed on {today:dd MMM yyyy}";
             lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync(ct);
@@ -293,6 +293,7 @@ public class FollowUpsController : Controller
                 foreach (var l in leads)
                 {
                     l.RemarkDate = null;
+                    l.Status = "Follow-up Done";  
                     l.LatestRemark = $"Bulk follow-up completed on {today:dd MMM yyyy}";
                     l.UpdatedAt = DateTime.UtcNow;
                 }
