@@ -237,4 +237,4 @@ E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\refint\MultiverseCRM.dll
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.pdb
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\MultiverseCRM.genruntimeconfig.cache
 E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\ref\MultiverseCRM.dll
-E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-anh7ycqlei-anh7ycqlei.gz
+E:\CRM-multiverse\MultiverseCRM\obj\Debug\net10.0\compressed\y5w1npq3dv-{0}-7vzf9wocya-7vzf9wocya.gz

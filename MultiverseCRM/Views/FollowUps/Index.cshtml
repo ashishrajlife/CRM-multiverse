@@ -117,6 +117,21 @@
         .table-footer .pagination { flex-wrap: nowrap; }
         .table-footer .page-link { padding: .3rem .55rem; }
     }
+    .copy-phone-btn,
+.fu-col-lead .btn {
+    height: 25px;
+    min-width: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    border-radius: 5px;
+}
+
+.fu-col-lead .btn:hover {
+    transform: translateY(-1px);
+    transition: all .15s ease;
+}
 
 </style>
 
@@ -187,29 +202,28 @@
 <ul class="nav premium-tabs mb-3">
      <li class="nav-item">
         <a class="nav-link @(Model.ActiveTab == "all" ? "active" : "")"
-           href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
-            <i class="bi bi-collection me-1"></i>All
+           href="@Url.Action("Index", new { tab = "all", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })"> All
             <span class="badge bg-secondary ms-1">@Model.AllCount</span>
         </a>
     </li>
       <li class="nav-item">
         <a class="nav-link @(Model.ActiveTab == "today" ? "active" : "")"
            href="@Url.Action("Index", new { tab = "today", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
-            <i class="bi bi-alarm me-1"></i>Today
+            Today
             <span class="badge bg-warning text-dark ms-1">@Model.TodayCount</span>
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link @(Model.ActiveTab == "overdue" ? "active" : "")"
            href="@Url.Action("Index", new { tab = "overdue", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
-            <i class="bi bi-exclamation-triangle me-1"></i>Overdue
+           Overdue
             <span class="badge bg-danger ms-1">@Model.OverdueCount</span>
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link @(Model.ActiveTab == "upcoming" ? "active" : "")"
            href="@Url.Action("Index", new { tab = "upcoming", search = Model.Search, staff = Model.StaffFilter, sortBy = Model.SortBy, sortOrder = Model.SortOrder, pageSize = Model.PageSize })">
-            <i class="bi bi-calendar-week me-1"></i>Upcoming
+            Upcoming
             <span class="badge bg-info text-dark ms-1">@Model.UpcomingCount</span>
         </a>
     </li>
@@ -420,12 +434,45 @@
                                     </td>
                                     <td class="fu-col-lead fu-sticky-left">
                                         <div class="d-flex align-items-center gap-2 min-w-0">
-                                            <span class="lead-avatar flex-shrink-0">@Format.Initials(row.FullName)</span>
+                                            <span class="lead-avatar flex-shrink-0">
+                                                @Format.Initials(row.FullName)
+                                            </span>
+
                                             <div class="min-w-0">
-                                                <div class="fw-semibold text-truncate">@row.FullName</div>
+                                                <div class="fw-semibold text-truncate">
+                                                    @row.FullName
+                                                </div>
+
                                                 <div class="small text-muted text-truncate">
                                                     @row.City@(row.Project != null ? " · " + row.Project : "")
                                                 </div>
+
+                                                @if (!string.IsNullOrWhiteSpace(row.Phone))
+                                                {
+                                                    var phoneDigits = new string(row.Phone.Where(char.IsDigit).ToArray());
+                                                    var whatsappNumber = phoneDigits.Length == 10
+                                                        ? "91" + phoneDigits
+                                                        : phoneDigits;
+
+                                                    <div class="d-flex align-items-center gap-1 mt-1">
+
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-outline-secondary py-0 px-2 copy-phone-btn"
+                                                                data-phone="@row.Phone"
+                                                                title="Copy phone number">
+                                                            <i class="bi bi-copy"></i>
+                                                        </button>
+
+                                                        <a href="https://wa.me/@whatsappNumber"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="btn btn-sm btn-outline-success py-0 px-2"
+                                                        title="Chat on WhatsApp">
+                                                            <i class="bi bi-whatsapp"></i>
+                                                        </a>
+
+                                                    </div>
+                                                }
                                             </div>
                                         </div>
                                     </td>
@@ -860,5 +907,40 @@ function showEmptyState() {
         }
     });
 })();
+
+// ─── Copy Lead Phone Number ─────────────────────
+
+document.addEventListener('click', async function (e) {
+
+    const btn = e.target.closest('.copy-phone-btn');
+
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const phone = btn.dataset.phone;
+
+    if (!phone) return;
+
+    try {
+        await navigator.clipboard.writeText(phone);
+
+        const originalHtml = btn.innerHTML;
+
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 1200);
+
+    } catch (error) {
+        console.error('Phone copy failed:', error);
+        alert('Unable to copy phone number.');
+    }
+});
 </script>
 }

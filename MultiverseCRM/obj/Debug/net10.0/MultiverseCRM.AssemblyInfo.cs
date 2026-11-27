@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MultiverseCRM")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3c5f3875a7264254a09b83b62b27660ab9ce2e06")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d20a706ce68e9b44bdc4e15ee96a373045c463f6")]
 [assembly: System.Reflection.AssemblyProductAttribute("MultiverseCRM")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MultiverseCRM")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
