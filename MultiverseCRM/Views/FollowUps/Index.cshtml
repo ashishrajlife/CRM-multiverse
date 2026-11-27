@@ -26,6 +26,98 @@
     .filter-actions .btn { display: inline-flex; align-items: center; justify-content: center; }
     .table-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
     .pagination { align-items: center; }
+
+
+    /* Mobile follow-up cards */
+    .fu-mobile-cards { display: none; }
+
+    @@media (max-width: 767.98px) {
+        .fu-mobile-cards {
+            display: flex;
+            flex-direction: column;
+            gap: .75rem;
+            padding: .75rem;
+        }
+
+        .fu-table-wrap { display: none; }
+
+        .fu-mobile-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+            min-width: 0;
+        }
+
+        .fu-mobile-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: .5rem;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #edf0f3;
+        }
+
+        .fu-mobile-card-head .lead-avatar { flex-shrink: 0; }
+        .fu-mobile-status { white-space: nowrap; font-size: .7rem; }
+
+        .fu-mobile-card-body {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 10px;
+            padding: 13px 0;
+        }
+
+        .fu-mobile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+            font-size: .82rem;
+            overflow-wrap: anywhere;
+        }
+
+        .fu-mobile-info > span:first-child { font-size: .72rem; }
+        .fu-mobile-info strong { font-weight: 600; }
+
+        .fu-mobile-remark {
+            border-top: 1px solid #edf0f3;
+            padding-top: 11px;
+            overflow-wrap: anywhere;
+        }
+
+        .fu-mobile-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 11px;
+            border-top: 1px solid #edf0f3;
+        }
+
+        .fu-mobile-actions .btn {
+            flex: 1;
+            min-width: 0;
+            font-size: .78rem;
+            white-space: nowrap;
+        }
+
+        .table-footer {
+            padding: .75rem;
+            align-items: flex-start;
+        }
+
+        .table-footer > div:last-child {
+            width: 100%;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .table-footer nav { max-width: 100%; overflow-x: auto; }
+        .table-footer .pagination { flex-wrap: nowrap; }
+        .table-footer .page-link { padding: .3rem .55rem; }
+    }
+
 </style>
 
 <!-- ═══ STAT CARDS ═══ -->
@@ -213,6 +305,87 @@
         }
         else
         {
+            <!-- MOBILE FOLLOW-UP CARDS -->
+            <div class="fu-mobile-cards">
+                @foreach (var row in Model.Rows)
+                {
+                    var mobileDays = row.DaysFromToday;
+                    var mobileBadgeClass = mobileDays < 0 ? "fu-badge-danger" : mobileDays == 0 ? "fu-badge-warning" : "fu-badge-info";
+                    var mobileBadgeText = mobileDays < 0 ? $"{Math.Abs(mobileDays)}d overdue" : mobileDays == 0 ? "Today" : $"in {mobileDays}d";
+
+                    <div class="fu-mobile-card" data-id="@row.LeadId">
+                        <div class="fu-mobile-card-head">
+                            <div class="d-flex align-items-center gap-2 min-w-0">
+                                <input type="checkbox" class="form-check-input row-check" value="@row.LeadId" aria-label="Select @row.FullName" />
+                                <span class="lead-avatar flex-shrink-0">@Format.Initials(row.FullName)</span>
+                                <div class="min-w-0">
+                                    <div class="fw-semibold text-truncate">@row.FullName</div>
+                                    <div class="small text-muted text-truncate">
+                                        @row.City@(row.Project != null ? " · " + row.Project : "")
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="pill fu-mobile-status" style="--pill:#64748b">@row.Status</span>
+                        </div>
+
+                        <div class="fu-mobile-card-body">
+                            <div class="fu-mobile-info">
+                                <span class="text-muted">Follow-up date</span>
+                                <strong>@row.RemarkDate.ToString("dd MMM yyyy")</strong>
+                                <small class="text-muted">@row.RemarkDate.DayOfWeek</small>
+                            </div>
+                            <div class="fu-mobile-info">
+                                <span class="text-muted">Days</span>
+                                <strong><span class="fu-badge @mobileBadgeClass">@mobileBadgeText</span></strong>
+                            </div>
+                            <div class="fu-mobile-info">
+                                <span class="text-muted">Staff</span>
+                                <strong>@(string.IsNullOrEmpty(row.Staff) ? "—" : row.Staff)</strong>
+                            </div>
+                            <div class="fu-mobile-info">
+                                <span class="text-muted">Contact</span>
+                                <div class="d-flex flex-column gap-1">
+                                    @if (!string.IsNullOrEmpty(row.Phone))
+                                    {
+                                        <a href="tel:@row.Phone" class="text-decoration-none">
+                                            <i class="bi bi-telephone me-1"></i>@row.Phone
+                                        </a>
+                                    }
+                                    @if (!string.IsNullOrEmpty(row.Email))
+                                    {
+                                        <span class="small text-muted text-break">
+                                            <i class="bi bi-envelope me-1"></i>@row.Email
+                                        </span>
+                                    }
+                                    @if (string.IsNullOrEmpty(row.Phone) && string.IsNullOrEmpty(row.Email))
+                                    {
+                                        <strong>—</strong>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fu-mobile-remark">
+                            <span class="text-muted small">Latest remark</span>
+                            <div class="small mt-1 text-break">@(row.LatestRemark ?? "—")</div>
+                        </div>
+
+                        <div class="fu-mobile-actions">
+                            <button type="button"
+                                    class="btn btn-sm btn-success action-btn"
+                                    data-action="done" data-id="@row.LeadId">
+                                <i class="bi bi-check-lg me-1"></i>Mark done
+                            </button>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary action-btn"
+                                    data-action="reschedule" data-id="@row.LeadId">
+                                <i class="bi bi-calendar-plus me-1"></i>Reschedule
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+
             <div class="fu-table-wrap">
                 <div class="fu-table-scroll">
                     <table class="fu-table">
@@ -523,18 +696,22 @@ function showEmptyState() {
         }
         return;
     }
-    tableWrap.innerHTML = `
+    const emptyHtml = `
         <div class="text-center py-5">
             <i class="bi bi-check2-circle fs-1 text-success"></i>
             <p class="text-muted mt-3 mb-0">Sab follow-ups clear ho gaye! 🎉</p>
         </div>`;
+
+    tableWrap.innerHTML = emptyHtml;
+    const mobileCards = document.querySelector('.fu-mobile-cards');
+    if (mobileCards) mobileCards.innerHTML = emptyHtml;
 }
 
     // ─── Selection ─────────────────────────────────────────
     const selectAll = document.getElementById('selectAll');
     const bulkBar = document.getElementById('bulkBar');
     const bulkCount = document.getElementById('bulkCount');
-    const rowChecks = () => Array.from(document.querySelectorAll('.row-check'));
+    const rowChecks = () => Array.from(document.querySelectorAll('.row-check')).filter(c => c.getClientRects().length > 0);
 
     function updateBulkBar() {
         const selected = rowChecks().filter(c => c.checked);
@@ -586,7 +763,7 @@ function showEmptyState() {
 
                 try {
                     await postForm('/FollowUps/MarkDone', { id });
-                    fadeOutRow(this.closest('tr'));
+                    fadeOutRow(this.closest('tr') || this.closest('.fu-mobile-card'));
                 } catch (err) {
                     console.error('[FollowUps] MarkDone failed:', err);
                     this.disabled = false;
@@ -611,7 +788,11 @@ function showEmptyState() {
             await postJson('/FollowUps/BulkAction', { ids, action: 'done', newDate: null });
             ids.forEach(id => {
                 const row = document.querySelector(`tr[data-id="${id}"]`);
-                if (row) fadeOutRow(row);
+                const card = document.querySelector(`.fu-mobile-card[data-id="${id}"]`);
+                if (row) row.remove();
+                if (card) card.remove();
+                updateBulkBar();
+                if (rowChecks().length === 0) showEmptyState();
             });
         } catch (err) {
             console.error('[FollowUps] Bulk done failed:', err);
