@@ -514,9 +514,10 @@ a { text-underline-offset: 3px; }
     font-size: 0.86rem;
     table-layout: auto;
     text-align: center;
+    color: #334155;
 }
 
-.premium-table thead th {
+/* .premium-table thead th {
     position: sticky;
     top: 0;
     z-index: 10;
@@ -530,7 +531,22 @@ a { text-underline-offset: 3px; }
     text-transform: uppercase;
     vertical-align: middle;
     text-align: center;
+} */
+
+.premium-table thead th {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-align: center !important;
+    vertical-align: middle;
+    white-space: nowrap;
+    padding: 14px 12px;
+    border: 1px solid #475569;
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
+
 .premium-table thead th:last-child { border-right: 0; }
 
 .premium-table tbody td {
@@ -564,7 +580,7 @@ a { text-underline-offset: 3px; }
     min-width: 40px;
     width: 40px;
 }
-.premium-table thead th.sticky-col-left:first-child { z-index: 30 !important; background: #F1F4FA; }
+.premium-table thead th.sticky-col-left:first-child { z-index: 30 !important; }
 
 .premium-table th.sticky-col-left:nth-child(2),
 .premium-table td.sticky-col-left:nth-child(2) {
@@ -572,7 +588,7 @@ a { text-underline-offset: 3px; }
     z-index: 19 !important;
     min-width: 220px;
 }
-.premium-table thead th.sticky-col-left:nth-child(2) { z-index: 29 !important; background: #F1F4FA; }
+.premium-table thead th.sticky-col-left:nth-child(2) { z-index: 29 !important; }
 
 .premium-table tbody .sticky-col-left { border-right: 1px solid rgba(15,23,42,.10); }
 .premium-table tbody tr:hover .sticky-col-left { background: #EEF3FF !important; }
@@ -2584,7 +2600,6 @@ html, body {
     color: var(--aqua);
 }
 .leads-page .premium-table thead th .sort-header { justify-content: center; }
-.leads-page .premium-table thead th.sticky-col-left { background: #F1F4FA !important; }
 [data-theme="dark"] .leads-page .premium-table thead th.sticky-col-left { background: #0C1724 !important; }
 .leads-page .premium-table td.sticky-col-left:nth-child(2),
 .leads-page .premium-table th.sticky-col-left:nth-child(2) { box-shadow: 8px 0 10px -8px rgba(15,23,42,.18); }

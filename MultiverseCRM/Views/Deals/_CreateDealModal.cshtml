@@ -61,7 +61,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-medium">Project</label>
-                                <select id="createProjectPicker" class="form-select">
+                               <select id="createProjectPicker" name="ProjectId" class="form-select">
                                     <option value="">— Any project —</option>
                                     @foreach (var p in Model.AllProjects)
                                     {
@@ -73,7 +73,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label small fw-medium">Property</label>
-                                <select id="createPropertyPicker" class="form-select">
+                                <select id="createPropertyPicker" name="PropertyId" class="form-select">
                                     <option value="">— No property —</option>
                                     @foreach (var pr in Model.AllProperties)
                                     {

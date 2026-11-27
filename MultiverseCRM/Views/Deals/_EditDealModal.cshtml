@@ -55,7 +55,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-medium">Project</label>
-                                <select id="editProjectPicker" class="form-select">
+                                <select id="editProjectPicker" name="ProjectId" class="form-select">
                                     <option value="">— Any project —</option>
                                     @foreach (var p in Model.AllProjects)
                                     {
@@ -66,7 +66,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label small fw-medium">Property</label>
-                                <select id="editPropertyPicker" class="form-select">
+                               <select id="editPropertyPicker" name="PropertyId" class="form-select">
                                     <option value="">— No property —</option>
                                     @foreach (var pr in Model.AllProperties)
                                     {

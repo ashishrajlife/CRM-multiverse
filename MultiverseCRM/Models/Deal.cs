@@ -44,4 +44,10 @@ public class Deal
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public Property? Property { get; set; }
+        // ═══ NEW — FK links to real Project & Property entities ═══
+    public int? ProjectId { get; set; }
+    public Project? ProjectEntity { get; set; }
+
+    public int? PropertyId { get; set; }
+    public Property? PropertyEntity { get; set; }
 } 
