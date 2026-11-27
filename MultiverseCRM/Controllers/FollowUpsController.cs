@@ -40,11 +40,9 @@ public class FollowUpsController : Controller
     private static DateTime TodayIst() =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, GetIstTz()).Date;
 
-    // ═══════════════════════════════════════════════════════════
-    // DISPLAY-LEVEL TOLERANCE
-    // Past dates within N days → display as "today" (belt & suspenders)
-    // ═══════════════════════════════════════════════════════════
-    private const int OverdueToleranceDays = 30;
+    // A follow-up becomes overdue once its RemarkDate is 2 calendar days
+    // in the past. One day late remains in the Today bucket as a grace day.
+    private const int OverdueAfterDays = 2;
 
     public async Task<IActionResult> Index(
         string tab = "today",
@@ -53,14 +51,14 @@ public class FollowUpsController : Controller
         string sortBy = "RemarkDate",
         string sortOrder = "asc",
         int page = 1,
-        int pageSize = 25,
+        int pageSize = 10,
         CancellationToken ct = default)
     {
         tab = (tab ?? "today").ToLowerInvariant();
         if (tab != "today" && tab != "overdue" && tab != "upcoming" && tab != "all")
             tab = "today";
 
-        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 25;
+        pageSize = new[] { 10, 25, 50, 100 }.Contains(pageSize) ? pageSize : 10;
         page = Math.Max(1, page);
 
         var today = TodayIst();
@@ -75,14 +73,15 @@ public class FollowUpsController : Controller
             })
             .ToListAsync(ct);
 
-        // Compute effective diff with tolerance (past-30 → 0 = today)
+        // A follow-up is overdue from the second calendar day after its
+        // scheduled date. A one-day-late follow-up stays in Today as grace.
         var enriched = allLeadsWithFollowUp.Select(l =>
         {
             var rd = l.RemarkDate!.Value;
             var actualDiff = (rd.Date - today).Days;
-            var displayDiff = (actualDiff < 0 && actualDiff > -OverdueToleranceDays)
-                ? 0
-                : actualDiff;
+            var displayDiff = actualDiff <= -OverdueAfterDays
+                ? actualDiff
+                : Math.Max(actualDiff, 0);
 
             return new
             {
